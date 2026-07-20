@@ -13,6 +13,14 @@ const CONFIG = {
     wrongPasswordMessage: "Oops! That's not the secret to our little world 💕",
 
     // ------------------------------------------
+    // Supabase Database Config (Optional / Shared permanent storage)
+    // ------------------------------------------
+    supabase: {
+        url: "", // Paste your Supabase Project URL here
+        anonKey: "" // Paste your Supabase Anon API Key here
+    },
+
+    // ------------------------------------------
     // 0.1 BACKGROUND MUSIC
     // ------------------------------------------
     // By default, we use a public dreamy piano track.

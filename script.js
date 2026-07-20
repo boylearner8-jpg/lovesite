@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Supabase Client dynamically
+    let supabaseClient = null;
+    if (typeof supabase !== 'undefined' && CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.anonKey) {
+        supabaseClient = supabase.createClient(CONFIG.supabase.url, CONFIG.supabase.anonKey);
+        window.supabaseClient = supabaseClient; // Expose globally for managers
+    }
+
     // ==========================================
     // 0. PASSWORD SYSTEM (LOCK SCREEN)
     // ==========================================
@@ -293,15 +300,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ==========================================
     // 2.8. BACKEND-READY MEMORY STORAGE MANAGER
-    // (Easy to connect to Firebase / Supabase later)
     // ==========================================
     class MemoryBackendManager {
         static getLocalStorageKey() {
             return 'anu_vishu_memories';
         }
 
+        // Helper to check if Supabase is active
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
         // Load all memories (async to support future network requests seamlessly)
         static async loadMemories() {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { data, error } = await client
+                        .from('memories')
+                        .select('*')
+                        .order('created_at', { ascending: true });
+                    
+                    if (!error && data) {
+                        return data.map(row => ({
+                            id: row.id,
+                            imagePath: row.image_path,
+                            caption: row.caption
+                        }));
+                    }
+                    console.error("Supabase load error, falling back to local:", error);
+                } catch (e) {
+                    console.error("Error connecting to Supabase memories:", e);
+                }
+            }
+
+            // LocalStorage Fallback
             try {
                 const stored = localStorage.getItem(this.getLocalStorageKey());
                 if (stored) {
@@ -310,21 +343,93 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.error("Error loading memories from localStorage:", e);
             }
-            // Fallback to static config memories if no local overrides exist
             return CONFIG.gallery || [];
         }
 
         // Add a new memory
         static async addMemory(item) {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    let finalImagePath = item.imagePath;
+
+                    // Optional: If it's a base64 Data URL, try uploading to Supabase Storage Bucket 'memories-bucket'
+                    if (item.imagePath.startsWith('data:image/')) {
+                        try {
+                            const blob = await (await fetch(item.imagePath)).blob();
+                            const fileExt = blob.type.split('/')[1] || 'jpg';
+                            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                            
+                            const { data: uploadData, error: uploadError } = await client.storage
+                                .from('memories-bucket')
+                                .upload(fileName, blob, {
+                                    contentType: blob.type,
+                                    cacheControl: '3600'
+                                });
+                            
+                            if (!uploadError && uploadData) {
+                                // Retrieve public URL
+                                const { data: urlData } = client.storage
+                                    .from('memories-bucket')
+                                    .getPublicUrl(fileName);
+                                
+                                if (urlData && urlData.publicUrl) {
+                                    finalImagePath = urlData.publicUrl;
+                                }
+                            }
+                        } catch (uploadFail) {
+                            console.warn("Bucket upload failed (saving Base64 directly to database instead):", uploadFail);
+                        }
+                    }
+
+                    const { error } = await client
+                        .from('memories')
+                        .insert([
+                            { image_path: finalImagePath, caption: item.caption }
+                        ]);
+                    
+                    if (!error) {
+                        return this.loadMemories();
+                    }
+                    console.error("Supabase insert error:", error);
+                } catch (e) {
+                    console.error("Error adding memory to Supabase:", e);
+                }
+            }
+
+            // LocalStorage Fallback
             const memories = await this.loadMemories();
             memories.push(item);
             localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(memories));
             return memories;
         }
 
-        // Delete a memory by index
+        // Delete a memory
         static async deleteMemory(index) {
             const memories = await this.loadMemories();
+            const target = memories[index];
+            if (!target) return memories;
+
+            const client = this.getClient();
+            if (client) {
+                try {
+                    let query = client.from('memories');
+                    if (target.id) {
+                        query = query.delete().eq('id', target.id);
+                    } else {
+                        query = query.delete().eq('image_path', target.imagePath);
+                    }
+                    const { error } = await query;
+                    if (!error) {
+                        return this.loadMemories();
+                    }
+                    console.error("Supabase delete error:", error);
+                } catch (e) {
+                    console.error("Error deleting memory from Supabase:", e);
+                }
+            }
+
+            // LocalStorage Fallback
             memories.splice(index, 1);
             localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(memories));
             return memories;
@@ -610,6 +715,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'anu_vishu_letters';
         }
 
+        // Helper to check if Supabase is active
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
         // Get initial seed letters if storage is empty
         static getSeedLetters() {
             return [
@@ -634,7 +744,33 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
         }
 
-        static loadLetters() {
+        static async loadLetters() {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { data, error } = await client
+                        .from('letters')
+                        .select('*')
+                        .order('timestamp', { ascending: false });
+                    
+                    if (!error && data) {
+                        return data.map(row => ({
+                            id: row.id,
+                            recipient: row.recipient,
+                            title: row.title,
+                            content: row.content,
+                            date: row.date_str,
+                            time: row.time_str,
+                            timestamp: Number(row.timestamp)
+                        }));
+                    }
+                    console.error("Supabase load error, falling back to local letters:", error);
+                } catch (e) {
+                    console.error("Error connecting to Supabase letters:", e);
+                }
+            }
+
+            // LocalStorage Fallback
             try {
                 const stored = localStorage.getItem(this.getLocalStorageKey());
                 if (stored) {
@@ -649,9 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return seeds;
         }
 
-        static saveLetter(recipient, title, content) {
-            const letters = this.loadLetters();
-            
+        static async saveLetter(recipient, title, content) {
             // Format current date, time, and weekday automatically
             const now = new Date();
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -677,13 +811,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: now.getTime()
             };
 
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { error } = await client
+                        .from('letters')
+                        .insert([
+                            {
+                                id: newLetter.id,
+                                recipient: newLetter.recipient,
+                                title: newLetter.title,
+                                content: newLetter.content,
+                                date_str: newLetter.date,
+                                time_str: newLetter.time,
+                                timestamp: newLetter.timestamp
+                            }
+                        ]);
+                    if (!error) {
+                        return this.loadLetters();
+                    }
+                    console.error("Supabase letter save error:", error);
+                } catch (e) {
+                    console.error("Error saving letter to Supabase:", e);
+                }
+            }
+
+            // LocalStorage Fallback
+            const letters = await this.loadLetters();
             letters.push(newLetter);
             localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(letters));
             return letters;
         }
 
-        static deleteLetter(id) {
-            let letters = this.loadLetters();
+        static async deleteLetter(id) {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { error } = await client
+                        .from('letters')
+                        .delete()
+                        .eq('id', id);
+                    if (!error) {
+                        return this.loadLetters();
+                    }
+                    console.error("Supabase letter delete error:", error);
+                } catch (e) {
+                    console.error("Error deleting letter from Supabase:", e);
+                }
+            }
+
+            // LocalStorage Fallback
+            let letters = await this.loadLetters();
             letters = letters.filter(l => l.id !== id);
             localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(letters));
             return letters;
@@ -724,11 +902,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentlySelectedLetterId = null;
 
     // Render list grid of letters
-    function renderJournalList() {
+    async function renderJournalList() {
         if (!journalGrid) return;
         journalGrid.innerHTML = '';
 
-        const allLetters = JournalBackendManager.loadLetters();
+        const allLetters = await JournalBackendManager.loadLetters();
 
         // Sort: newest first
         allLetters.sort((a, b) => b.timestamp - a.timestamp);
@@ -741,6 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const countForVishu = allLetters.filter(l => l.recipient === 'Vishu').length;
         if (countAnu) countAnu.textContent = countForAnu;
         if (countVishu) countVishu.textContent = countForVishu;
+
 
         if (filtered.length === 0) {
             journalGrid.innerHTML = `<div class="journal-empty-state">No letters yet ❤️</div>`;
@@ -841,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save letter click
     if (journalSaveBtn) {
-        journalSaveBtn.addEventListener('click', () => {
+        journalSaveBtn.addEventListener('click', async () => {
             const title = journalInputTitle.value.trim();
             const content = journalInputContent.value.trim();
             
@@ -855,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Save via manager
-            JournalBackendManager.saveLetter(recipient, title, content);
+            await JournalBackendManager.saveLetter(recipient, title, content);
             closeWriteModal();
             
             // Auto switch active tab to match the saved recipient so user sees it instantly
@@ -874,12 +1053,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Delete letter click
     if (readDeleteBtn) {
-        readDeleteBtn.addEventListener('click', () => {
+        readDeleteBtn.addEventListener('click', async () => {
             if (!currentlySelectedLetterId) return;
 
             const confirmed = confirm("Are you sure you want to delete this letter permanently?");
             if (confirmed) {
-                JournalBackendManager.deleteLetter(currentlySelectedLetterId);
+                await JournalBackendManager.deleteLetter(currentlySelectedLetterId);
                 closeReadModal();
                 renderJournalList();
             }
