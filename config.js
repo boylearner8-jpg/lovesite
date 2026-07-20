@@ -16,8 +16,8 @@ const CONFIG = {
     // Supabase Database Config (Optional / Shared permanent storage)
     // ------------------------------------------
     supabase: {
-        url: "", // Paste your Supabase Project URL here
-        anonKey: "" // Paste your Supabase Anon API Key here
+        url: "https://hghipnfpckyozavskltc.supabase.co", // Paste your Supabase Project URL here
+        anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnaGlwbmZwY2t5b3phdnNrbHRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MjA0NjQsImV4cCI6MjEwMDA5NjQ2NH0.008qcvgWTIGYoITvMaHwdMkpUFVaf6WbV7QBpP8rjGs" // Paste your Supabase Anon API Key here
     },
 
     // ------------------------------------------
