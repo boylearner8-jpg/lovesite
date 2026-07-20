@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Love Story 💕</title>
+    
+    <!-- Meta tags for SEO & Link Previews -->
+    <meta name="description" content="A beautiful digital story of our love, memories, and dreams. Made with love.">
+    <meta property="og:title" content="Our Love Story">
+    <meta property="og:description" content="Two souls, countless memories, one beautiful story.">
+    <meta property="og:type" content="website">
+
+    <!-- Google Fonts: Elegant Cursive, Serif, and Clean Sans-Serif -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons for UI Elements -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Floating Particle Background Canvas -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- 0. PASSWORD LOCK SCREEN -->
+    <div id="lock-screen" class="lock-screen-container">
+        <div class="lock-card glass-card">
+            <div class="lock-icon">
+                <i class="fa-solid fa-heart lock-heart" id="lock-heart-icon"></i>
+            </div>
+            <h2 class="lock-title">Enter Our Secret World</h2>
+            <p class="lock-subtitle">Only the correct key can unlock our story... 🗝️</p>
+            
+            <div class="password-form-group">
+                <div class="password-input-wrapper">
+                    <input type="password" id="password-input" placeholder="Enter password..." aria-label="Secret Password">
+                    <button type="button" id="toggle-password-visibility" aria-label="Toggle Password Visibility">
+                        <i class="fa-regular fa-eye" id="eye-icon"></i>
+                    </button>
+                </div>
+                <div class="password-error" id="password-error"></div>
+                <button type="button" class="btn btn-primary lock-btn" id="unlock-btn">
+                    <span>Enter Our World 💜</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Wrapper (Hidden initially) -->
+    <div id="main-content" class="hidden">
+        <!-- Transparent / Glass Navigation Bar -->
+        <header class="navbar">
+            <div class="nav-container">
+                <a href="#home" class="nav-logo" id="nav-logo-text">Anu & Vishu</a>
+                
+                <nav class="nav-menu" id="nav-menu">
+                    <a href="#home" class="nav-link active">Home</a>
+                    <a href="#counter-section" class="nav-link">Our Time 💕</a>
+                    <a href="#story" class="nav-link">Our Story</a>
+                <a href="#memories" class="nav-link">Memories</a>
+                <a href="#reasons" class="nav-link">Random</a>
+                <a href="#letter" class="nav-link">Love Pledge</a>
+                <a href="#love-letter" class="nav-link">Love Letter 💌</a>
+                <a href="#reassurance" class="nav-link">Reassurance 💜</a>
+                <a href="#love-quiz" class="nav-link">Love Quiz 💕</a>
+                <a href="#sad-section" class="nav-link">Feeling Sad? 🥺</a>
+            </nav>
+
+            <button class="hamburger" id="hamburger" aria-label="Toggle Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 1. HERO / LANDING SECTION -->
+    <section id="home" class="hero-section">
+        <div class="hero-container">
+            <div class="hero-content">
+                <span class="subtitle-badge">Our Private World</span>
+                <h1 class="hero-title" id="hero-title">Welcome to Our Little World 💕</h1>
+                <p class="hero-desc" id="hero-subtitle">Two souls, countless memories, one beautiful story.</p>
+                <a href="#story" class="btn btn-primary" id="enter-story-btn">
+                    <span>Enter Our Story ✨</span>
+                </a>
+            </div>
+            
+            <div class="hero-image-wrapper">
+                <div class="hero-image-container">
+                    <img id="hero-img" src="" alt="Couple Photo" class="hero-img">
+                    <div class="hero-img-gradient-overlay"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1.5 RELATIONSHIP COUNTER SECTION -->
+    <section id="counter-section" class="section-padding counter-section alternate-bg scroll-reveal">
+        <div class="container text-center">
+            <h2 class="romantic-heading" id="counter-title">How Long We've Been Us 💕</h2>
+            <h3 class="counter-couple" id="counter-names">Anu 💕 Vishu</h3>
+            <div class="header-divider"></div>
+            
+            <div class="counter-grid">
+                <!-- Years Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-years">0</span>
+                    <span class="counter-label">Years</span>
+                </div>
+                <!-- Months Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-months">0</span>
+                    <span class="counter-label">Months</span>
+                </div>
+                <!-- Days Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-days">0</span>
+                    <span class="counter-label">Days</span>
+                </div>
+                <!-- Hours Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-hours">0</span>
+                    <span class="counter-label">Hours</span>
+                </div>
+                <!-- Minutes Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-minutes">0</span>
+                    <span class="counter-label">Minutes</span>
+                </div>
+                <!-- Seconds Card -->
+                <div class="counter-card glass-card">
+                    <span class="counter-value" id="counter-seconds">0</span>
+                    <span class="counter-label">Seconds</span>
+                </div>
+            </div>
+            
+            <p class="counter-since" id="counter-since-text">Since March 1, 2026 • 2:12 AM</p>
+            <p class="counter-quote" id="counter-quote-text">Every second with you is another piece of our forever. 💜</p>
+        </div>
+    </section>
+
+    <!-- 2. OUR STORY SECTION -->
+    <section id="story" class="section-padding">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">Our Story 💜</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">A timeline of the milestones that brought us closer together.</p>
+            </div>
+            
+            <!-- Dynamic Vertical Timeline -->
+            <div class="timeline-container" id="timeline-container">
+                <!-- Timeline items will be rendered dynamically by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. MEMORIES / PHOTO GALLERY -->
+    <section id="memories" class="section-padding alternate-bg">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">Our Memories 📸</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">Moments captured in time, frozen forever in our hearts.</p>
+            </div>
+            
+            <!-- Hidden Admin Mode Controls Panel -->
+            <div id="admin-controls-panel" class="glass-card" style="display: none; max-width: 600px; margin: 1.5rem auto; padding: 1.5rem; text-align: center; border-color: var(--secondary-light);">
+                <h4 style="color: var(--secondary-light); margin-bottom: 1rem; font-size: 1.1rem; letter-spacing: 0.5px;">🛠️ Memories Admin Panel</h4>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" id="admin-add-btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">📷 Add Memory</button>
+                    <button type="button" class="btn btn-secondary" id="admin-toggle-remove-btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">🗑️ Remove Memory</button>
+                    <button type="button" class="btn btn-primary" id="admin-exit-btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem; background: var(--bg-darker); border-color: rgba(255,255,255,0.25);">❌ Exit Admin Mode</button>
+                </div>
+            </div>
+            
+            <!-- Gallery Grid -->
+            <div class="gallery-grid" id="gallery-grid">
+                <!-- Gallery items will be rendered dynamically by JavaScript -->
+            </div>
+
+            <!-- Load More Button -->
+            <div class="gallery-load-more-wrap text-center" style="margin-top: 3.5rem;">
+                <button type="button" class="btn btn-primary" id="load-more-memories-btn">
+                    💜 Load More Memories
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. RANDOM MEMORIES SECTION -->
+    <section id="reasons" class="section-padding">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">Random 💕</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">A collection of random sweet surprises and memories.</p>
+            </div>
+            
+            <!-- Reasons 3D Flip Card Grid -->
+            <div class="reasons-grid" id="reasons-grid">
+                <!-- 3D Reasons cards will be rendered dynamically by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. LOVE PLEDGE SECTION -->
+    <section id="letter" class="section-padding alternate-bg scroll-reveal">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">Our Love Pledge 💜</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">A solemn promise exchanged between two hearts, forever united.</p>
+            </div>
+            
+            <!-- Love Pledge Image Display -->
+            <div class="love-pledge-wrapper">
+                <div class="love-pledge-card glass-card">
+                    <img src="assets/images/love_pledge.jpg" alt="Our Love Pledge" class="love-pledge-img" id="love-pledge-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. LOVE LETTER JOURNAL SECTION -->
+    <section id="love-letter" class="section-padding scroll-reveal">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">Our Letters Journal 💌</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">A quiet corner for our thoughts, promises, and little notes. Shared between our hearts.</p>
+            </div>
+
+            <!-- Tab Buttons with Count Badges -->
+            <div class="journal-tabs-container">
+                <button type="button" class="journal-tab-btn active" id="tab-anu-btn">
+                    <span>Letters for Anu 💜</span>
+                    <span class="badge" id="count-anu">0</span>
+                </button>
+                <button type="button" class="journal-tab-btn" id="tab-vishu-btn">
+                    <span>Letters for Vishu ❤️</span>
+                    <span class="badge" id="count-vishu">0</span>
+                </button>
+            </div>
+
+            <!-- Letters List Grid -->
+            <div class="journal-grid" id="journal-grid">
+                <!-- Dynamically populated letter cards -->
+            </div>
+
+            <!-- Floating Write Button inside the section container -->
+            <div class="write-btn-wrapper text-center" style="margin-top: 3rem;">
+                <button type="button" class="btn btn-primary" id="write-letter-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2.5rem; font-size: 1.05rem; border-radius: 50px;">
+                    <span>✍️ Write a Letter</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- WRITE LETTER MODAL -->
+    <div class="modal" id="write-letter-modal">
+        <div class="modal-overlay" id="write-letter-overlay"></div>
+        <div class="modal-content glass-card" style="max-width: 550px; padding: 2.5rem 2rem;">
+            <button class="modal-close" id="write-letter-close" aria-label="Close">&times;</button>
+            <h3 class="modal-title" style="color: var(--secondary-light); margin-bottom: 1.5rem; text-align: center;">✍️ Write a Letter</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 1.2rem; text-align: left;">
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Recipient *</label>
+                    <div style="display: flex; gap: 1.5rem; margin-top: 0.3rem;">
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: #fff;">
+                            <input type="radio" name="recipient-choice" value="Anu" checked style="accent-color: var(--primary);"> ❤️ Anu
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: #fff;">
+                            <input type="radio" name="recipient-choice" value="Vishu" style="accent-color: var(--primary);"> 💜 Vishu
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Letter Title *</label>
+                    <input type="text" id="journal-input-title" placeholder="e.g. A note for your bad days..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: #fff; outline: none;">
+                </div>
+                
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Your Letter *</label>
+                    <textarea id="journal-input-content" rows="6" placeholder="Write from your heart..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: #fff; outline: none; resize: vertical; line-height: 1.6;"></textarea>
+                </div>
+            </div>
+            
+            <div id="journal-write-error" style="color: var(--secondary); font-size: 0.85rem; margin-top: 1rem; margin-bottom: 1rem; text-align: center;"></div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="button" class="btn btn-primary" id="journal-save-btn" style="flex: 1;">💌 Save Letter</button>
+                <button type="button" class="btn btn-secondary" id="journal-cancel-btn" style="flex: 0.8; background: transparent; border-color: rgba(255,255,255,0.25);">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- READ LETTER MODAL -->
+    <div class="modal" id="read-letter-modal">
+        <div class="modal-overlay" id="read-letter-overlay"></div>
+        <div class="modal-content glass-card" style="max-width: 550px; padding: 2.5rem 2rem; text-align: center;">
+            <button class="modal-close" id="read-letter-close" aria-label="Close">&times;</button>
+            
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+                <span class="badge" id="read-recipient-badge" style="font-size: 0.75rem; text-transform: uppercase;">Anu</span>
+            </div>
+            
+            <h3 class="modal-title" id="read-letter-title" style="color: var(--secondary-light); margin-bottom: 0.5rem; font-family: var(--font-serif);">Letter Title</h3>
+            <p id="read-letter-datetime" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;"></p>
+            
+            <!-- Letter Scrollable Content Body -->
+            <div id="read-letter-body" style="font-size: 1rem; line-height: 1.85; color: rgba(255,255,255,0.9); text-align: left; max-height: 350px; overflow-y: auto; padding-right: 8px; margin-bottom: 2rem; white-space: pre-wrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding-top: 1rem; padding-bottom: 1rem;">
+                <!-- Full letter content goes here -->
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" id="read-close-btn" style="flex: 1;">❤️ Close</button>
+                <button type="button" class="btn btn-primary" id="read-delete-btn" style="flex: 0.8; background: rgba(233,43,90,0.85); border-color: rgba(233,43,90,0.3);">🗑️ Delete Letter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. REASSURANCE SECTION -->
+    <section id="reassurance" class="section-padding reassurance-section scroll-reveal">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="romantic-heading">🤍 Reassurance</h2>
+                <div class="header-divider"></div>
+                <p class="section-subtitle">Whenever your heart feels heavy, these words will always be here waiting for you. ❤️</p>
+            </div>
+
+            <div class="reassurance-grid">
+                <!-- Card 1 -->
+                <div class="reassurance-card glass-card reassurance-trigger" 
+                     data-title="Am I Too Late In Life? 🥺"
+                     data-message="Anu, pata nahi tumhare dimaag mein ye baat kahan se aati hai ki tum life mein piche reh gayi ho. 18 ki age mein 12th class mein hona koi failure nahi hota, meri jaan. Life koi marathon ya race nahi hai jisme sabko ek hi time pe end line cross karni hai. Har insaan ka apna ek unique timeline hota hai, aur sabki apni growth speed hoti hai. Ek chota sa board exam ya school marks kabhi bhi tumhari self-worth ya tumhare wajood ko define nahi kar sakte. Agar ye saal bilkul tumhare soche huye plan ke hisab se nahi bhi jata hai na, tab bhi main tumpe utna hi proud rahunga. Kyunki main tumhara hardwork dekhta hoon, tumhari roz ki choti choti fight dekhta hoon aur wahi matter karta hai. Marks se hazaar guna zyada tumhari mental health, tumhari khushi aur tumhara dil matter karta hai mere liye. Please apne aap ko kisi se compare karke apna dil chota mat kiya karo. Tum bilkul sahi jagah pe ho aur bahut acchi tarah se life ko handle kar rahi ho. Chill karo, pressure mat lo, main hamesha tumhare sath khada hoon aur har step pe tumhara haath pakde rahunga.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🥺</div>
+                    <h3>Am I Too Late In Life?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="What If I Fail Again? 📚"
+                     data-message="Mera bacha, agar tum fail ho bhi gayi na, toh ye koi end nahi hai. Duniya mein koi bhi aisa successful insaan nahi hai jisne kabhi failure face na kiya ho. Asal failure har maan lena hota hai, aur mujhe pata hai meri Anu har manne walon mein se nahi hai. Tum bina kisi tension aur bina kisi pressure ke bas apni koshish karti raho. Jo tumse ban pata hai, utna karo. Mujhe tumhare marks se ya kisi result se koi lena dena nahi hai, mujhe sirf tumhare efforts se matlab hai. Main tumpe tab bhi utna hi believe karta hoon jab tum sabse zyada struggle kar rahi hoti ho aur jab tumhara khud par se bharosa uth chuka hota hai. Tumhare andar bahut potential hai, bas darr ko apne upar haavi mat hone do. Har galti aur har failure hume kuch seekh dekar jata hai, aur hum dono milkar har problem ka samna karenge. Bas bina kisi darr ke padho, result jo bhi ho, hum sath khade hain.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">📚</div>
+                    <h3>What If I Fail Again?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Why Didn't My Family Love Me? 💔"
+                     data-message="Anu, main samajh sakta hoon ki jagah se love aur validation nahi milti jahan se sabse zyada milni chahiye, toh kitna gehra dard hota hai. Woh hurt main tumhare chehre par dekh sakta hoon. Par meri baat dhyan se suno, isme tumhari koi galti nahi hai, aur na hi iska matlab ye hai ki tum kisi ke pyaar ke layak nahi ho. Tum sach mein bahut precious ho, bahut special ho aur tumhara hona is duniya mein sabse badi blessing hai. Tum har tarah ki kindness, care aur respect deserve karti ho. Main apni taraf se poori koshish karunga ki main tumhara sabse bada support ban sakoon. Main chahta hoon ki main tumhari life mein woh insaan banun jo tumhe har roz protect kare, respect kare aur bina kisi condition ke care kare. Tumhe kabhi bhi akela ya unloved feel nahi hone dunga, chahe halat jaise bhi ho. Tum meri life ka sabse pyaara hissa ho aur tumhara har dukh ab mera dukh hai.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">💔</div>
+                    <h3>Why Didn't My Family Love Me?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Am I Really Pretty? 🥹"
+                     data-message="Cutu, tum ye kaise pooch sakti ho? Main bilkul dil se bol raha hoon, mere liye tum is poori duniya mein sabse khoobsurat ladki ho. Tumhari woh choti choti smile, tumhari aankhein jab tum baat karti ho, tumhari hasi aur tumhara sabki care karne ka tareeqa... sab kuch itna pyara hai ki main dekhta hi reh jata hoon. Aur sirf physical beauty nahi, tumhara saaf dil aur tumhari sweet personality hi tumhe sabse alag banati hai. Please kabhi bhi social media ke filters ya kisi aur ladki se apne aap ko compare mat kiya karo. Har kisi ki apni ek alag khoobsurati hoti hai, par jo sukoon mujhe tumhari shakal dekh kar milta hai na, woh kisi aur cheez mein nahi hai. Mere liye tum har time, har look mein perfect ho. Kisi ke validation ki bilkul zaroorat nahi hai tumhe. Jab tumhara Vishu keh raha hai ki tum breathtaking ho, toh bas bina kisi doubt ke maan liya karo meri baat.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🥹</div>
+                    <h3>Am I Really Pretty?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Will I Ever Be Successful? 🌸"
+                     data-message="Anu, success koi aisi cheez nahi hai jo ek raat mein mil jaye, isme waqt lagta hai. Life mein sabse important cheez hai tumhara patience, consistency aur mushkil waqt mein khade rehne ka courage. Tum jo roz thoda thoda effort dalti ho na apni padhai aur apne future ke liye, mujhe us par sach mein bahut proud feel hota hai. Success ka matlab sirf koi bada result ya paisa nahi hota, balki har roz thoda aage badhna aur har problem ke baad wapas khade hona bhi success hai. Tumhari journey abhi chal rahi hai, aur mujhe poora yakeen hai ki tum apni life mein bahut kuch accha karogi. Main hamesha tumhara haath pakde rahunga jab tum mehnat karogi, aur jab tum thak jaogi tab tumhe rest dene ke liye bhi khada rahunga. Bas jaldbazi mat karo, relax raho aur apne upar bharosa rakho. Ek din tumhara har ek dream poora hoga.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🌸</div>
+                    <h3>Will I Ever Be Successful?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Do You Really Love Me? ❤️"
+                     data-message="Shona, main tumse sach mein bahut pyaar karta hoon, aur ye sirf kehne ki baat nahi hai. Main har roz tumhare liye ye feel karta hoon. Main tumse isliye pyaar nahi karta ki tum koi perfect ladki ho, balki isliye karta hoon kyunki tum Anu ho, bilkul genuine aur innocent. Tumhari woh pyari si aawaz, baat baat par bachon ki tarah behave karna, tumhari caring habits aur mujh par gussa karne ka tareeqa... ye sab mujhe tumhara deewana banata hai. Mera pyaar tumhare mood swings ya tumhari situations par depend nahi karta, main har halat mein tumhara hath pakadne ke liye ready hoon. Tum jaise bhi ho, mere liye sabse special ho. Zindagi mein chahe kitne bhi utar-chadao aayein, mera pyaar tumhare liye hamesha utna hi rahega balki roz badhta jayega. Tum meri priority ho aur hamesha rahogi. Jab bhi dimaag mein ye sawal aaye na, bas sochna ki ek pagal ladka hai jo tumpar apni jaan chidakta hai.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">❤️</div>
+                    <h3>Do You Really Love Me?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 7 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="What If Everyone Leaves Me? 🤍"
+                     data-message="Mera bacha, lonely feel hona aur ye sochna ki sab chhod denge, sach mein bahut scary hota hai, main samajh hoon. Par main tumhe ek baat bilkul clear bol dena chahta hoon — chahe duniya idhar ki udhar ho jaye, main kabhi tumhara sath nahi chhodunga. Jab life bahut overwhelming lagne lage aur lage ki koi sunne wala nahi hai, tab tum bina kisi jhijhak ke mere paas aa sakti ho. Tumhe sab kuch akele carry karne ki koi zaroorat nahi hai. Mujhse tum dil ki har baat keh sakti ho, chahe woh kitni bhi messy ya ajeeb kyun na ho. Main hamesha poore patience ke sath tumhari baatein sununga aur tumhara hath pakad kar rakhunga. Hum dono milkar har problem ka solution nikalenge. Tum akeli nahi ho aur na hi kabhi hogi. Jab tak main hoon, tumhare paas ek permanent safe space hai jahan tum ro sakti ho, has sakti ho aur bas apne real self mein reh sakti ho.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🤍</div>
+                    <h3>What If Everyone Leaves Me?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 8 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Will You Always Stay? 🫂"
+                     data-message="Anu, main koi filmi ya unrealistic wada nahi karunga ki main chaand taare tod launga, par main ek wada bilkul dil se karta hoon — main har situation mein tumhare sath khada rahunga. Pyaari aur khushiyon bhari baatein karna aasan hota hai, par jab mushkil waqt aayega, tab bhi main peeche nahi hatunga. Main har roz tumhara sath dena aur tumse pyaar karna choose karunga. Hamari relationship mein loyalty, support aur ek doosre ki respect sabse upar rahegi. Hum dono ke beech chahe kitni bhi dooriyan ho ya kitne bhi jhagde ho, main hamesha unhe solve karne ki koshish karunga na ki dur bhaagne ki. Main tumhara best friend aur tumhara shield bankar rahunga. Tumhe mere sath rehte huye kabhi insecure feel nahi hoga, ye wada raha. Hum sath mein har din ek naya step lenge aur aage badhenge.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🫂</div>
+                    <h3>Will You Always Stay?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 9 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Am I Enough? 🌙"
+                     data-message="Meri jaan, tum jaisi ho na, mere liye bilkul perfect aur enough ho. Tumhe kisi ka pyaar ya validation paane ke liye apne aap ko badalne ki ya koi aur banne ki bilkul zaroorat nahi hai. Tum jaisi aaj ho, apne saare moods, apni nadaniyon aur apni sweet baaton ke sath, wahi mere liye sabse pyaari cheez hai. Tum hamesha se respect aur unconditional care ke layak rahi ho. Apne aap ko kabhi bhi kam mat samjho. Mere liye tumhara hona hi sabse badi khushi hai, aur main kabhi nahi chahunga ki tum mere liye badlo. Tumhare sath reh kar mujhe lagta hai ki mujhe life mein sab mil gaya hai. Apne dil se ye darr nikal do ki tum kisi ke liye kam ho. Tum mere liye sabse zyada ho, aur hamesha rahogi.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">🌙</div>
+                    <h3>Am I Enough?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+
+                <!-- Card 10 -->
+                <div class="reassurance-card glass-card reassurance-trigger"
+                     data-title="Do You Really Think I Can Do It? ✨"
+                     data-message="Anu, mujhe tumhari abilities par poora aur saccha bharosa hai. Jab main kehta hoon ki tum kar sakti ho, toh main kisi fake motivation ya bookish quotes ke liye nahi kehta, main dil se maanta hoon. Courage ka matlab ye nahi hota ki tum kabhi daro nahi, balki ye hota hai ki darr ke baajood tum wapas khade ho aur aage badho. Tumhe ek hi din mein sab kuch theek nahi karna hai, bas ek chota sa step lo har din. Thodi si padhai, thodi si koshish, aur dheere dheere sab normal ho jayega. Main tumhari strength banna chahta hoon jab tum weak feel karo. Apne darr ko side mein rakho, apna best do aur baaki sab mere upar chhod do. Main tumhare sath hoon har step par. Mujhe pata hai tum isse kar sakti ho, aur main hamesha tumhare har effort ko celebrate karne ke liye taiyar hoon.<br><br>Love, Vishu ❤️">
+                    <div class="promise-icon">✨</div>
+                    <h3>Do You Really Think I Can Do It?</h3>
+                    <p>Tap to read my reassurance... 💜</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- REASSURANCE POPUP MODAL -->
+    <div class="modal" id="reassurance-modal">
+        <div class="modal-overlay" id="reassurance-modal-overlay"></div>
+        <div class="modal-content glass-card" style="max-width: 500px; text-align: center; padding: 3rem 2rem;">
+            <button class="modal-close" id="reassurance-modal-close" aria-label="Close Modal">&times;</button>
+            <h3 class="modal-title" id="reassurance-modal-title" style="margin-bottom: 1.5rem; color: #e8c8ff; font-family: var(--font-serif);">Reassurance 💜</h3>
+            <p class="modal-text" id="reassurance-modal-text" style="font-size: 1.02rem; line-height: 1.8; color: rgba(255,255,255,0.9); text-align: left; max-height: 380px; overflow-y: auto; padding-right: 5px;"></p>
+            <button class="btn btn-primary" id="reassurance-close-btn" style="margin-top: 2rem; width: 100%;">Close 💜</button>
+        </div>
+    </div>
+
+
+    <!-- 7.5. DO YOU LOVE ME? SECTION -->
+    <section id="love-quiz" class="section-padding quiz-section alternate-bg scroll-reveal">
+        <div class="container">
+            <div class="quiz-wrapper glass-card">
+                <h2 class="quiz-title" id="quiz-question-text">Do You Love Me? 🥺💕</h2>
+                <p class="quiz-subtitle" id="quiz-subtitle-text">Choose carefully... your answer is very important 😌</p>
+                
+                <div class="quiz-buttons-container" id="quiz-buttons-area">
+                    <button type="button" class="btn btn-primary quiz-btn" id="quiz-yes-btn">YES 💕</button>
+                    <button type="button" class="btn btn-secondary quiz-btn" id="quiz-no-btn">NO 😒</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8.5. FEELING SAD SECTION -->
+    <section id="sad-section" class="section-padding sad-section scroll-reveal">
+        <div class="container">
+            <div class="sad-wrapper text-center">
+                <!-- Floating emoji rain -->
+                <div class="sad-emoji-float" aria-hidden="true">
+                    <span>🥺</span><span>💜</span><span>🤗</span><span>💕</span><span>✨</span>
+                    <span>🌸</span><span>❤️</span><span>😊</span><span>💫</span><span>🌙</span>
+                </div>
+
+                <div class="sad-box glass-card">
+                    <div class="sad-icon-wrap">
+                        <div class="sad-icon-pulse">🥺</div>
+                    </div>
+                    <h2 class="sad-title">Feeling Sad? 🥺</h2>
+                    <p class="sad-desc">Hey meri Anu... agar dil bhaari hai aaj,<br>toh is button ko dabao.<br>Main hoon na. Hamesha. 💜</p>
+                    <button class="btn sad-btn" id="sad-btn">
+                        <span class="sad-btn-icon">💌</span>
+                        <span>Vishu Ka Message Lo</span>
+                    </button>
+                    <p class="sad-hint">Har baar dabane pe naya message aayega 🌸</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. SPECIAL SURPRISE SECTION -->
+    <section class="surprise-section text-center section-padding">
+        <div class="container">
+            <div class="surprise-box glass-card">
+                <div class="heart-pulse-container">
+                    <i class="fa-solid fa-heart pulse-heart-large"></i>
+                </div>
+                <h3 class="surprise-title">I have a tiny secret...</h3>
+                <p class="surprise-desc">Deep down in my heart, there's something I always want you to know.</p>
+                <button class="btn btn-secondary" id="surprise-btn">
+                    <span id="surprise-btn-text">I Have Something To Tell You 💜</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="footer-story-note">"Our story is still being written... ✨"</p>
+            <div class="footer-divider"></div>
+            <p class="footer-credits" id="footer-credits-text">Made with ❤️ by Vishu, just for you.</p>
+        </div>
+    </footer>
+
+    <!-- WELCOME LOGIN MODAL -->
+    <div class="modal" id="welcome-modal">
+        <div class="modal-overlay" id="welcome-modal-overlay"></div>
+        <div class="modal-content welcome-modal-content glass-card">
+            <!-- Floating hearts background -->
+            <div class="welcome-hearts-bg" aria-hidden="true">
+                <span>💜</span><span>❤️</span><span>💕</span><span>💗</span>
+                <span>✨</span><span>🌸</span><span>💫</span><span>💖</span>
+            </div>
+
+            <button class="modal-close" id="welcome-modal-close" aria-label="Close">&times;</button>
+
+            <!-- Header with avatar ring -->
+            <div class="welcome-avatar-ring">
+                <div class="welcome-avatar-glow">💜</div>
+            </div>
+
+            <p class="welcome-from-label">A message from Vishu 💌</p>
+            <h3 class="modal-title welcome-modal-title" id="welcome-modal-title">Welcome Back, Anu ✨</h3>
+            <p class="modal-text welcome-modal-text" id="welcome-modal-text"></p>
+
+            <div class="welcome-modal-actions">
+                <button class="btn welcome-next-btn" id="welcome-next-btn">
+                    <span class="welcome-next-icon">💌</span>
+                    <span>Ek Aur Message</span>
+                </button>
+                <button class="btn welcome-close-btn" id="welcome-close-btn">
+                    Enter Our World 💜
+                </button>
+            </div>
+
+            <!-- Bottom sparkle bar -->
+            <div class="welcome-sparkle-bar">
+                <span>✨</span><span>💜</span><span>✨</span><span>💜</span><span>✨</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAD COMFORT MODAL -->
+    <div class="modal" id="sad-modal">
+        <div class="modal-overlay" id="sad-modal-overlay"></div>
+        <div class="modal-content sad-modal-content glass-card">
+            <button class="modal-close" id="sad-modal-close" aria-label="Close">&times;</button>
+            <div class="sad-modal-emoji">🤗</div>
+            <h3 class="modal-title" id="sad-modal-title">Main Hoon Na 💜</h3>
+            <p class="modal-text" id="sad-modal-text"></p>
+            <button class="btn sad-modal-next-btn" id="sad-modal-next-btn">
+                <span>Ek Aur Message 💕</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SURPRISE MODAL / POPUP -->
+    <div class="modal" id="surprise-modal">
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <button class="modal-close" id="modal-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-heart-icon">
+                <svg viewBox="0 0 32 32" class="heart-svg">
+                    <path d="M16,28.261c-0.27,0-0.54-0.102-0.748-0.311C14.779,27.479,2,14.629,2,9.309C2,5.279,5.279,2,9.309,2 c2.459,0,4.68,1.219,6.024,3.228C16.677,3.219,18.898,2,21.357,2C25.388,2,28.667,5.279,28.667,9.309 c0,5.32-12.779,18.17-13.252,18.641C15.207,28.158,14.938,28.261,16,28.261z" fill="#ff4d6d" />
+                </svg>
+            </div>
+            <h3 class="modal-title" id="surprise-modal-title">For My Favorite Person 💜</h3>
+            <p class="modal-text" id="surprise-modal-text">No matter how many memories we make, my favorite part will always be making them with you. ❤️</p>
+            <button class="btn btn-primary" id="modal-close-btn">Close with a smile 😊</button>
+        </div>
+    </div>
+
+    <!-- LOVE QUIZ SUCCESS MODAL -->
+    <div class="modal" id="quiz-success-modal">
+        <div class="modal-overlay" id="quiz-success-overlay"></div>
+        <div class="modal-content glass-card">
+            <button class="modal-close" id="quiz-success-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-heart-icon">
+                <i class="fa-solid fa-heart pulse-heart-large" style="color: #ff4d6d; font-size: 4rem;"></i>
+            </div>
+            <h3 class="modal-title" id="quiz-success-title">I knew it! 😭💕</h3>
+            <p class="modal-text" id="quiz-success-text">I love you moreeeee! ♾️💜</p>
+            <button class="btn btn-primary" id="quiz-success-close-btn">Forever & Always 💕</button>
+        </div>
+    </div>
+
+    <!-- PHOTO LIGHTBOX MODAL -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-overlay" id="lightbox-overlay"></div>
+        <button class="lightbox-close" id="lightbox-close" aria-label="Close Lightbox">&times;</button>
+        <button class="lightbox-prev" id="lightbox-prev" aria-label="Previous Photo"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="Enlarged Memory">
+            <p class="lightbox-caption" id="lightbox-caption">Caption</p>
+        </div>
+    </div> <!-- End Lightbox -->
+
+    <!-- Floating Background Music Control -->
+    <button id="music-toggle-btn" class="music-toggle-btn glass-card" aria-label="Toggle Background Music">
+        <i class="fa-solid fa-music music-note-icon spinning"></i>
+    </button>
+    <audio id="bg-audio" loop></audio>
+
+    </div> <!-- End Main Content Wrapper -->
+
+    <!-- ADMIN PASSWORD MODAL -->
+    <div class="modal" id="admin-pass-modal">
+        <div class="modal-overlay" id="admin-pass-overlay"></div>
+        <div class="modal-content glass-card" style="max-width: 400px; text-align: center; padding: 2.5rem 2rem;">
+            <button class="modal-close" id="admin-pass-close" aria-label="Close">&times;</button>
+            <h3 class="modal-title" style="color: var(--secondary-light); margin-bottom: 1rem;">Unlock Admin Mode</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">Enter the admin secret password to manage memories 🗝️</p>
+            <input type="password" id="admin-password-input" placeholder="Enter admin password..." style="width: 100%; padding: 0.8rem 1.2rem; border-radius: 50px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: #fff; margin-bottom: 1.2rem; text-align: center; outline: none;">
+            <div id="admin-pass-error" style="color: var(--secondary); font-size: 0.85rem; margin-bottom: 1rem;"></div>
+            <button class="btn btn-primary" id="admin-pass-submit-btn" style="width: 100%;">Verify Secret 💜</button>
+        </div>
+    </div>
+
+    <!-- ADMIN ADD MEMORY MODAL -->
+    <div class="modal" id="admin-add-modal">
+        <div class="modal-overlay" id="admin-add-overlay"></div>
+        <div class="modal-content glass-card" style="max-width: 460px; text-align: center; padding: 2.5rem 2rem;">
+            <button class="modal-close" id="admin-add-close" aria-label="Close">&times;</button>
+            <h3 class="modal-title" style="color: var(--secondary-light); margin-bottom: 1.5rem;">📷 Add New Memory</h3>
+            
+            <div style="text-align: left; display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Select Memory Image *</label>
+                    <input type="file" id="admin-add-file" accept="image/*" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-glass); color: #fff;">
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Memory Title / Caption</label>
+                    <input type="text" id="admin-add-title" placeholder="e.g. Our first date... 💖" style="width: 100%; padding: 0.7rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: #fff; outline: none;">
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Memory Date</label>
+                    <input type="text" id="admin-add-date" placeholder="e.g. October 12, 2024" style="width: 100%; padding: 0.7rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: #fff; outline: none;">
+                </div>
+            </div>
+            
+            <div id="admin-add-error" style="color: var(--secondary); font-size: 0.85rem; margin-top: 1rem; margin-bottom: 1rem;"></div>
+            <button class="btn btn-primary" id="admin-add-submit-btn" style="width: 100%; margin-top: 1rem;">Add to Gallery 💜</button>
+        </div>
+    </div>
+
+    <!-- Config data and Main Logic Script -->
+    <script src="config.js"></script>
+    <script src="messages.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
