@@ -322,6 +322,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         .order('created_at', { ascending: true });
                     
                     if (!error && data) {
+                        // If database is connected but has 0 records, migrate static default photos automatically
+                        if (data.length === 0 && CONFIG.gallery && CONFIG.gallery.length > 0) {
+                            console.log("Empty Supabase table detected. Migrating static memories...");
+                            const migrationData = CONFIG.gallery.map(item => ({
+                                image_path: item.imagePath,
+                                caption: item.caption
+                            }));
+                            await client.from('memories').insert(migrationData);
+                            
+                            // Re-fetch after migration
+                            const { data: migratedData, error: migrationError } = await client
+                                .from('memories')
+                                .select('*')
+                                .order('created_at', { ascending: true });
+                            
+                            if (!migrationError && migratedData) {
+                                return migratedData.map(row => ({
+                                    id: row.id,
+                                    imagePath: row.image_path,
+                                    caption: row.caption
+                                }));
+                            }
+                        }
+
                         return data.map(row => ({
                             id: row.id,
                             imagePath: row.image_path,
@@ -754,6 +778,40 @@ document.addEventListener('DOMContentLoaded', () => {
                         .order('timestamp', { ascending: false });
                     
                     if (!error && data) {
+                        // If database is connected but has 0 records, migrate seed letters automatically
+                        if (data.length === 0) {
+                            console.log("Empty Supabase letters table detected. Migrating seed letters...");
+                            const seeds = this.getSeedLetters();
+                            const migrationLetters = seeds.map(letter => ({
+                                id: letter.id,
+                                recipient: letter.recipient,
+                                title: letter.title,
+                                content: letter.content,
+                                date_str: letter.date,
+                                time_str: letter.time,
+                                timestamp: letter.timestamp
+                            }));
+                            await client.from('letters').insert(migrationLetters);
+                            
+                            // Re-fetch after migration
+                            const { data: migratedLetters, error: migrationError } = await client
+                                .from('letters')
+                                .select('*')
+                                .order('timestamp', { ascending: false });
+                            
+                            if (!migrationError && migratedLetters) {
+                                return migratedLetters.map(row => ({
+                                    id: row.id,
+                                    recipient: row.recipient,
+                                    title: row.title,
+                                    content: row.content,
+                                    date: row.date_str,
+                                    time: row.time_str,
+                                    timestamp: Number(row.timestamp)
+                                }));
+                            }
+                        }
+
                         return data.map(row => ({
                             id: row.id,
                             recipient: row.recipient,
