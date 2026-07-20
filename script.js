@@ -7,8 +7,228 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 0. PASSWORD SYSTEM (LOCK SCREEN)
+    // VISITOR TRACKING SYSTEM
     // ==========================================
+    class VisitorTracker {
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
+        static getFormattedDuration(ms) {
+            const totalSecs = Math.floor(ms / 1000);
+            if (totalSecs < 60) return `${totalSecs}s`;
+            const totalMins = Math.floor(totalSecs / 60);
+            const remainingSecs = totalSecs % 60;
+            if (totalMins < 60) return `${totalMins}m ${remainingSecs}s`;
+            const hours = Math.floor(totalMins / 60);
+            const remainingMins = totalMins % 60;
+            return `${hours}h ${remainingMins}m`;
+        }
+
+        static initTracking() {
+            if (this.trackerInterval) return; // Already running
+
+            this.loginTime = Date.now();
+            this.activeMs = 0;
+            this.idleMs = 0;
+            this.lastActivity = Date.now();
+            this.isIdle = false;
+            this.visitId = sessionStorage.getItem('current_visit_id') || null;
+
+            // Date & time formats
+            const now = new Date();
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            this.loginDate = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            this.loginTimeStr = `${hours}:${minutes} ${ampm}`;
+
+            // Create Supabase record if not already existing in this page session
+            if (!this.visitId) {
+                this.createNewRecord();
+            }
+
+            // Bind activity events
+            const resetTimer = () => {
+                const nowTime = Date.now();
+                if (this.isIdle) {
+                    this.isIdle = false;
+                }
+                this.lastActivity = nowTime;
+            };
+
+            const events = ['mousemove', 'keydown', 'touchstart', 'scroll', 'click'];
+            events.forEach(evt => window.addEventListener(evt, resetTimer, { passive: true }));
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    resetTimer();
+                } else {
+                    this.isIdle = true;
+                    this.saveProgress(true); // Save immediately when leaving
+                }
+            });
+
+            // Tracking Ticker
+            this.trackerInterval = setInterval(() => {
+                const elapsedSinceActivity = Date.now() - this.lastActivity;
+                
+                if (elapsedSinceActivity > 60000) {
+                    this.isIdle = true;
+                }
+
+                if (this.isIdle) {
+                    this.idleMs += 1000;
+                } else {
+                    this.activeMs += 1000;
+                }
+            }, 1000);
+
+            // Periodic auto-save to database every 10 seconds (ensures reliability)
+            this.saveInterval = setInterval(() => {
+                this.saveProgress(false);
+            }, 10000);
+
+            // Exit listener
+            window.addEventListener('beforeunload', () => {
+                this.saveProgress(true);
+            });
+        }
+
+        static async createNewRecord() {
+            const client = this.getClient();
+            if (!client) return;
+
+            try {
+                const { data, error } = await client
+                    .from('visitor_history')
+                    .insert([{
+                        login_date: this.loginDate,
+                        login_time: this.loginTimeStr,
+                        logout_time: 'Active',
+                        session_duration: '0s',
+                        active_time: '0s',
+                        idle_time: '0s',
+                        timestamp: this.loginTime
+                    }])
+                    .select();
+
+                if (!error && data && data.length > 0) {
+                    this.visitId = data[0].id;
+                    sessionStorage.setItem('current_visit_id', this.visitId);
+                }
+            } catch (e) {
+                console.error("Error creating visitor record:", e);
+            }
+        }
+
+        static async saveProgress(isLogout = false) {
+            const client = this.getClient();
+            if (!client || !this.visitId) return;
+
+            const now = Date.now();
+            const sessionDurationMs = now - this.loginTime;
+
+            let logoutTimeStr = 'Active';
+            if (isLogout) {
+                const nowDate = new Date();
+                let hours = nowDate.getHours();
+                const minutes = String(nowDate.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                logoutTimeStr = `${hours}:${minutes} ${ampm}`;
+            }
+
+            try {
+                await client
+                    .from('visitor_history')
+                    .update({
+                        logout_time: logoutTimeStr,
+                        session_duration: this.getFormattedDuration(sessionDurationMs),
+                        active_time: this.getFormattedDuration(this.activeMs),
+                        idle_time: this.getFormattedDuration(this.idleMs)
+                    })
+                    .eq('id', this.visitId);
+            } catch (e) {
+                console.error("Error updating visitor history:", e);
+            }
+        }
+    }
+
+    // Render visitor logs in History section
+    const renderHistoryLogs = async () => {
+        const timelineGrid = document.getElementById('history-timeline-grid');
+        if (!timelineGrid) return;
+
+        const client = window.supabaseClient;
+        if (!client) {
+            timelineGrid.innerHTML = `
+                <div class="history-item glass-card" style="padding: 2.2rem 1.8rem; text-align: center; grid-column: 1 / -1;">
+                    <p style="color: var(--text-muted);">Database not connected. Visit tracking is offline. 🔒</p>
+                </div>
+            `;
+            return;
+        }
+
+        try {
+            const { data, error } = await client
+                .from('visitor_history')
+                .select('*')
+                .order('timestamp', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching visitor history:", error);
+                timelineGrid.innerHTML = `
+                    <div class="history-item glass-card" style="padding: 2.2rem 1.8rem; text-align: center; grid-column: 1 / -1;">
+                        <p style="color: #ff4d6d; font-weight: 600; margin-bottom: 0.5rem;">⚠️ Supabase Table Error</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
+                            Please verify that you ran the SQL setup queries in Supabase SQL Editor.<br>
+                            <strong>Error details:</strong> ${error.message}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                timelineGrid.innerHTML = `
+                    <div class="history-item glass-card" style="padding: 2.2rem 1.8rem; text-align: center; grid-column: 1 / -1;">
+                        <p style="color: var(--text-muted);">No visit logs recorded yet. ❤️</p>
+                    </div>
+                `;
+                return;
+            }
+
+            timelineGrid.innerHTML = '';
+            data.forEach(visit => {
+                const card = document.createElement('div');
+                card.className = 'history-item glass-card';
+                card.style.cssText = 'padding: 2.2rem 1.8rem; text-align: left; transition: transform 0.3s ease;';
+                
+                // Add hover transform
+                card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-5px)');
+                card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
+
+                card.innerHTML = `
+                    <span class="history-badge" style="background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); color: #e0b0ff; padding: 0.3rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-block; margin-bottom: 1rem;">📅 ${visit.login_date}</span>
+                    <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 1rem; color: #ff758f;">Visit Session Details</h4>
+                    <div style="font-size: 0.9rem; color: var(--text-muted); display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; line-height: 1.5;">
+                        <div>🕒 <strong>Login:</strong> ${visit.login_time}</div>
+                        <div>🚪 <strong>Logout:</strong> ${visit.logout_time}</div>
+                        <div>⏱ <strong>Duration:</strong> ${visit.session_duration}</div>
+                        <div>💖 <strong>Active:</strong> ${visit.active_time}</div>
+                        <div>😴 <strong>Idle:</strong> ${visit.idle_time}</div>
+                    </div>
+                `;
+                timelineGrid.appendChild(card);
+            });
+        } catch (e) {
+            console.error("Error rendering history logs:", e);
+        }
+    };
+
     const lockScreen = document.getElementById('lock-screen');
     const mainContent = document.getElementById('main-content');
     const passwordInput = document.getElementById('password-input');
@@ -24,10 +244,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const musicToggleBtn = document.getElementById('music-toggle-btn');
     const musicNoteIcon = musicToggleBtn ? musicToggleBtn.querySelector('.music-note-icon') : null;
 
+    // Dynamic History section check
+    const checkHistoryAccess = () => {
+        if (sessionStorage.getItem('historyAccess') === 'true') {
+            const historySec = document.getElementById('history');
+            if (historySec) {
+                historySec.style.display = 'block';
+            }
+            // Add navigation link dynamically
+            const navMenu = document.getElementById('nav-menu');
+            if (navMenu && !document.getElementById('nav-history-link')) {
+                const link = document.createElement('a');
+                link.href = '#history';
+                link.className = 'nav-link';
+                link.id = 'nav-history-link';
+                link.textContent = 'History 📜';
+                navMenu.appendChild(link);
+            }
+            // Fetch and render logs
+            renderHistoryLogs();
+        }
+    };
+
     // Check unlocked state in sessionStorage
     if (sessionStorage.getItem('isUnlocked') === 'true') {
         lockScreen.classList.add('hidden');
         mainContent.classList.remove('hidden');
+        checkHistoryAccess();
+
+        // If unlocked as Anu (historyAccess is not 'true'), start/resume active visitor tracking
+        if (sessionStorage.getItem('historyAccess') !== 'true') {
+            VisitorTracker.initTracking();
+        }
+
         // Autoplay background music after unlocking (subject to browser permissions)
         setTimeout(() => {
             startMusic();
@@ -52,10 +301,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function validatePassword() {
         const inputVal = passwordInput.value.trim();
         
-        if (inputVal === CONFIG.password) {
+        if (inputVal === CONFIG.password || inputVal === 'Vishu@pubg1') {
             // Correct password!
             sessionStorage.setItem('isUnlocked', 'true');
+            if (inputVal === 'Vishu@pubg1') {
+                sessionStorage.setItem('historyAccess', 'true');
+            } else {
+                sessionStorage.setItem('historyAccess', 'false');
+                // Start tracking visitor metrics immediately for Anu
+                VisitorTracker.initTracking();
+            }
             passwordError.textContent = '';
+            checkHistoryAccess();
             
             // Play unlock animation
             lockScreen.classList.add('unlocked-fade');

@@ -54,6 +54,26 @@ alter table letters enable row level security;
 create policy "Allow public read access to letters" on letters for select using (true);
 create policy "Allow public insert access to letters" on letters for insert with check (true);
 create policy "Allow public delete access to letters" on letters for delete using (true);
+
+-- 3. Create Visitor History Table (For Anu's logins tracking)
+create table visitor_history (
+  id uuid default gen_random_uuid() primary key,
+  login_date text not null,
+  login_time text not null,
+  logout_time text,
+  session_duration text,
+  active_time text,
+  idle_time text,
+  timestamp bigint not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable Read & Write permissions for anonymous public users
+alter table visitor_history enable row level security;
+create policy "Allow public read access to visitor_history" on visitor_history for select using (true);
+create policy "Allow public insert access to visitor_history" on visitor_history for insert with check (true);
+create policy "Allow public update access to visitor_history" on visitor_history for update using (true);
+create policy "Allow public delete access to visitor_history" on visitor_history for delete using (true);
 ```
 
 4. Click **Run** (bottom right). You should see `Success` or `Query returned no rows`.
