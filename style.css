@@ -2682,8 +2682,11 @@ html.already-unlocked #main-content {
     background: rgba(10, 2, 20, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;
-    padding: 1.1rem;
+    padding: 1rem;
     backdrop-filter: blur(14px);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .insta-comments-header {
@@ -2709,10 +2712,12 @@ html.already-unlocked #main-content {
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
-    max-height: 220px;
+    max-height: 200px;
     overflow-y: auto;
     padding-right: 4px;
     margin-bottom: 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .insta-comment-item {
@@ -2720,6 +2725,8 @@ html.already-unlocked #main-content {
     align-items: flex-start;
     gap: 0.75rem;
     position: relative;
+    width: 100%;
+    min-width: 0;
 }
 
 .insta-avatar {
@@ -2753,6 +2760,7 @@ html.already-unlocked #main-content {
 
 .insta-comment-content {
     flex: 1;
+    min-width: 0;
     font-size: 0.88rem;
     line-height: 1.45;
     text-align: left;
@@ -2770,6 +2778,7 @@ html.already-unlocked #main-content {
 .insta-comment-text {
     color: rgba(255, 255, 255, 0.9);
     word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .insta-comment-meta {
@@ -2788,6 +2797,7 @@ html.already-unlocked #main-content {
     font-size: 0.85rem;
     padding: 0.2rem;
     transition: transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
 }
 
 .insta-like-btn:hover {
@@ -2799,73 +2809,75 @@ html.already-unlocked #main-content {
     color: #ff4d6d;
 }
 
-.insta-emoji-bar {
-    display: flex;
-    justify-content: space-around;
-    padding: 0.4rem 0.2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 0.6rem;
-}
-
-.insta-emoji-btn {
-    background: transparent;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    padding: 0.1rem 0.3rem;
-}
-
-.insta-emoji-btn:hover {
-    transform: scale(1.35);
-}
-
 .insta-input-wrapper {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 25px;
-    padding: 0.35rem 0.8rem;
+    padding: 0.35rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 .insta-name-field {
-    width: 85px;
+    width: 65px;
+    flex-shrink: 0;
     background: transparent;
     border: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
     color: #ff758f;
     font-weight: 600;
     font-size: 0.84rem;
     outline: none;
-    padding-right: 0.4rem;
+    padding-right: 0.35rem;
 }
 
 .insta-input-field {
     flex: 1;
+    min-width: 0;
     background: transparent;
     border: none;
     color: #ffffff;
     font-family: var(--font-main);
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     outline: none;
+    padding: 0 0.2rem;
 }
 
 .insta-post-btn {
+    flex-shrink: 0;
     background: transparent;
     border: none;
     color: #ff758f;
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     cursor: pointer;
     transition: opacity 0.2s ease, transform 0.2s ease;
     padding: 0.2rem 0.4rem;
+    white-space: nowrap;
 }
 
 .insta-post-btn:hover {
-    opacity: 0.8;
+    opacity: 0.85;
     transform: scale(1.05);
+}
+
+/* ==========================================
+   READ LETTER MODAL RESPONSIVE CARD
+   ========================================== */
+.read-letter-modal-card {
+    max-width: 620px;
+    width: 92%;
+    max-height: 85vh;
+    max-height: 85dvh;
+    padding: 1.8rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    position: relative;
 }
 
 /* ==========================================
@@ -3012,6 +3024,12 @@ html.already-unlocked #main-content {
     .window-nav-btn {
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
+    }
+
+    .read-letter-modal-card {
+        padding: 1.2rem 0.8rem;
+        max-height: 80vh;
+        max-height: 80dvh;
     }
 }
 

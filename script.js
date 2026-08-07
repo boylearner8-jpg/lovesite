@@ -372,35 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     };
 
-    // Automatic Apology Modal Popup Handler
-    const apologyAutoModal = document.getElementById('apology-auto-modal');
-    const apologyAutoClose = document.getElementById('apology-auto-close');
-    const apologyAutoOverlay = document.getElementById('apology-auto-overlay');
-    const apologyAutoBtn = document.getElementById('apology-auto-btn');
-
-    const openApologyAutoModal = () => {
-        if (apologyAutoModal) {
-            apologyAutoModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    };
-
-    const closeApologyAutoModal = () => {
-        if (apologyAutoModal) {
-            apologyAutoModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-            
-            // Open the "Message from Vishu" welcome modal immediately after closing
-            setTimeout(() => {
-                openWelcomeModal();
-            }, 350);
-        }
-    };
-
-    if (apologyAutoClose) apologyAutoClose.addEventListener('click', closeApologyAutoModal);
-    if (apologyAutoOverlay) apologyAutoOverlay.addEventListener('click', closeApologyAutoModal);
-    if (apologyAutoBtn) apologyAutoBtn.addEventListener('click', closeApologyAutoModal);
-
     if (checkSessionUnlock()) {
         document.documentElement.classList.add('already-unlocked');
         lockScreen.classList.add('hidden');
@@ -412,10 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
             VisitorTracker.initTracking();
         }
 
-        // Autoplay background music & open apology popup automatically
+        // Autoplay background music & open welcome modal automatically
         setTimeout(() => {
             startMusic();
-            openApologyAutoModal();
+            openWelcomeModal();
         }, 400);
     } else {
         lockScreen.classList.remove('hidden');
@@ -473,9 +444,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Trigger resize to fix background particles canvas
                 window.dispatchEvent(new Event('resize'));
 
-                // Show the apology popup automatically after unlock
+                // Show the welcome login popup automatically after unlock
                 setTimeout(() => {
-                    openApologyAutoModal();
+                    openWelcomeModal();
                 }, 500);
             }, 800);
 
