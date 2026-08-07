@@ -244,30 +244,165 @@ document.addEventListener('DOMContentLoaded', () => {
     const musicToggleBtn = document.getElementById('music-toggle-btn');
     const musicNoteIcon = musicToggleBtn ? musicToggleBtn.querySelector('.music-note-icon') : null;
 
-    // Dynamic History section check
+    // History section check (Window modal access only via 5 clicks on logo)
     const checkHistoryAccess = () => {
-        if (sessionStorage.getItem('historyAccess') === 'true') {
-            const historySec = document.getElementById('history');
-            if (historySec) {
-                historySec.style.display = 'block';
-            }
-            // Add navigation link dynamically
-            const navMenu = document.getElementById('nav-menu');
-            if (navMenu && !document.getElementById('nav-history-link')) {
-                const link = document.createElement('a');
-                link.href = '#history';
-                link.className = 'nav-link';
-                link.id = 'nav-history-link';
-                link.textContent = 'History 📜';
-                navMenu.appendChild(link);
-            }
-            // Fetch and render logs
-            renderHistoryLogs();
+        // No longer shows inline page section or nav link
+    };
+
+    // ==========================================
+    // HISTORY MODAL WINDOW & 5-CLICK SECRET TRIGGER
+    // ==========================================
+    const historyModalWindow = document.getElementById('history-modal-window');
+    const historyModalOverlay = document.getElementById('history-modal-overlay');
+    const historyModalClose = document.getElementById('history-modal-close');
+
+    const historyPassModal = document.getElementById('history-pass-modal');
+    const historyPassOverlay = document.getElementById('history-pass-overlay');
+    const historyPassClose = document.getElementById('history-pass-close');
+    const historyPassInput = document.getElementById('history-pass-input');
+    const historyPassError = document.getElementById('history-pass-error');
+    const historyPassSubmitBtn = document.getElementById('history-pass-submit-btn');
+
+    const openHistoryModalWindow = async () => {
+        if (historyModalWindow) {
+            await renderHistoryLogs();
+            historyModalWindow.classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
     };
 
-    // Check unlocked state in sessionStorage
-    if (sessionStorage.getItem('isUnlocked') === 'true') {
+    const closeHistoryModalWindow = () => {
+        if (historyModalWindow) historyModalWindow.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    };
+
+    const openHistoryPassModal = () => {
+        if (historyPassInput) historyPassInput.value = '';
+        if (historyPassError) historyPassError.textContent = '';
+        if (historyPassModal) {
+            historyPassModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => historyPassInput.focus(), 150);
+        }
+    };
+
+    const closeHistoryPassModal = () => {
+        if (historyPassModal) historyPassModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    };
+
+    const verifyHistoryPassword = () => {
+        if (!historyPassInput) return;
+        const val = historyPassInput.value.trim();
+        if (val === 'Vishu@pubg1') {
+            localStorage.setItem('historyAccess', 'true');
+            sessionStorage.setItem('historyAccess', 'true');
+            closeHistoryPassModal();
+            openHistoryModalWindow();
+        } else {
+            if (historyPassError) historyPassError.textContent = "Incorrect password! Only Vishu can access history logs. ❌";
+            historyPassInput.value = '';
+            historyPassInput.focus();
+        }
+    };
+
+    if (historyPassSubmitBtn) historyPassSubmitBtn.addEventListener('click', verifyHistoryPassword);
+    if (historyPassClose) historyPassClose.addEventListener('click', closeHistoryPassModal);
+    if (historyPassOverlay) historyPassOverlay.addEventListener('click', closeHistoryPassModal);
+    if (historyPassInput) {
+        historyPassInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') verifyHistoryPassword();
+        });
+    }
+
+    if (historyModalClose) historyModalClose.addEventListener('click', closeHistoryModalWindow);
+    if (historyModalOverlay) historyModalOverlay.addEventListener('click', closeHistoryModalWindow);
+
+    // 5-Click Secret Trigger on Navbar Logo Text ("Anu & Vishu")
+    const navLogoText = document.getElementById('nav-logo-text');
+    let logoClickCount = 0;
+    let logoClickTimer = null;
+
+    if (navLogoText) {
+        navLogoText.addEventListener('click', (e) => {
+            logoClickCount++;
+            
+            if (logoClickTimer) clearTimeout(logoClickTimer);
+            logoClickTimer = setTimeout(() => {
+                logoClickCount = 0;
+            }, 2500);
+
+            if (logoClickCount >= 5) {
+                e.preventDefault();
+                logoClickCount = 0;
+                clearTimeout(logoClickTimer);
+
+                openHistoryPassModal();
+            }
+        });
+    }
+
+    // 30 Minutes Session Timeout Logic (30 mins = 1,800,000 ms)
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+    const checkSessionUnlock = () => {
+        const savedTimeStr = localStorage.getItem('unlockTimestamp') || sessionStorage.getItem('unlockTimestamp');
+        const savedUnlocked = localStorage.getItem('isUnlocked') || sessionStorage.getItem('isUnlocked');
+        const savedHistoryAccess = localStorage.getItem('historyAccess') || sessionStorage.getItem('historyAccess');
+
+        if (savedUnlocked === 'true' && savedTimeStr) {
+            const elapsed = Date.now() - parseInt(savedTimeStr, 10);
+            if (elapsed < SESSION_TIMEOUT_MS) {
+                // Session is still valid (within 30 minutes)
+                localStorage.setItem('unlockTimestamp', Date.now().toString());
+                sessionStorage.setItem('isUnlocked', 'true');
+                sessionStorage.setItem('historyAccess', savedHistoryAccess || 'false');
+                document.documentElement.classList.add('already-unlocked');
+                return true;
+            }
+        }
+        
+        // Session expired or not logged in
+        document.documentElement.classList.remove('already-unlocked');
+        localStorage.removeItem('isUnlocked');
+        localStorage.removeItem('unlockTimestamp');
+        localStorage.removeItem('historyAccess');
+        sessionStorage.removeItem('isUnlocked');
+        sessionStorage.removeItem('historyAccess');
+        return false;
+    };
+
+    // Automatic Apology Modal Popup Handler
+    const apologyAutoModal = document.getElementById('apology-auto-modal');
+    const apologyAutoClose = document.getElementById('apology-auto-close');
+    const apologyAutoOverlay = document.getElementById('apology-auto-overlay');
+    const apologyAutoBtn = document.getElementById('apology-auto-btn');
+
+    const openApologyAutoModal = () => {
+        if (apologyAutoModal) {
+            apologyAutoModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    const closeApologyAutoModal = () => {
+        if (apologyAutoModal) {
+            apologyAutoModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Open the "Message from Vishu" welcome modal immediately after closing
+            setTimeout(() => {
+                openWelcomeModal();
+            }, 350);
+        }
+    };
+
+    if (apologyAutoClose) apologyAutoClose.addEventListener('click', closeApologyAutoModal);
+    if (apologyAutoOverlay) apologyAutoOverlay.addEventListener('click', closeApologyAutoModal);
+    if (apologyAutoBtn) apologyAutoBtn.addEventListener('click', closeApologyAutoModal);
+
+    if (checkSessionUnlock()) {
+        document.documentElement.classList.add('already-unlocked');
         lockScreen.classList.add('hidden');
         mainContent.classList.remove('hidden');
         checkHistoryAccess();
@@ -277,10 +412,11 @@ document.addEventListener('DOMContentLoaded', () => {
             VisitorTracker.initTracking();
         }
 
-        // Autoplay background music after unlocking (subject to browser permissions)
+        // Autoplay background music & open apology popup automatically
         setTimeout(() => {
             startMusic();
-        }, 200);
+            openApologyAutoModal();
+        }, 400);
     } else {
         lockScreen.classList.remove('hidden');
         mainContent.classList.add('hidden');
@@ -302,12 +438,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputVal = passwordInput.value.trim();
         
         if (inputVal === CONFIG.password || inputVal === 'Vishu@pubg1') {
-            // Correct password!
+            // Correct password! Save 30-minute persistent session
+            const nowMs = Date.now().toString();
+            const historyAccess = inputVal === 'Vishu@pubg1' ? 'true' : 'false';
+
+            localStorage.setItem('isUnlocked', 'true');
+            localStorage.setItem('unlockTimestamp', nowMs);
+            localStorage.setItem('historyAccess', historyAccess);
+
             sessionStorage.setItem('isUnlocked', 'true');
-            if (inputVal === 'Vishu@pubg1') {
-                sessionStorage.setItem('historyAccess', 'true');
-            } else {
-                sessionStorage.setItem('historyAccess', 'false');
+            sessionStorage.setItem('unlockTimestamp', nowMs);
+            sessionStorage.setItem('historyAccess', historyAccess);
+
+            if (historyAccess === 'false') {
                 // Start tracking visitor metrics immediately for Anu
                 VisitorTracker.initTracking();
             }
@@ -318,6 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lockScreen.classList.add('unlocked-fade');
             
             setTimeout(() => {
+                document.documentElement.classList.add('already-unlocked');
                 lockScreen.classList.add('hidden');
                 mainContent.classList.remove('hidden');
                 
@@ -329,10 +473,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Trigger resize to fix background particles canvas
                 window.dispatchEvent(new Event('resize'));
 
-                // Show the welcome login popup after a short delay
+                // Show the apology popup automatically after unlock
                 setTimeout(() => {
-                    openWelcomeModal();
-                }, 600);
+                    openApologyAutoModal();
+                }, 500);
             }, 800);
 
         } else {
@@ -427,6 +571,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ==========================================
+    // GLOBAL DELETE PASSWORD PROTECTION (Vishu@pubg1)
+    // ==========================================
+    let pendingDeleteCallback = null;
+
+    function closeDeleteConfirmModal() {
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        if (deleteConfirmModal) deleteConfirmModal.classList.remove('active');
+        pendingDeleteCallback = null;
+        const journalFullModal = document.getElementById('journal-full-modal');
+        const readLetterModal = document.getElementById('read-letter-modal');
+        const isJournalActive = journalFullModal && journalFullModal.classList.contains('active');
+        const isReadActive = readLetterModal && readLetterModal.classList.contains('active');
+        if (!isJournalActive && !isReadActive) {
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    function verifyDeletePassword() {
+        const deleteConfirmInput = document.getElementById('delete-confirm-input');
+        const deleteConfirmError = document.getElementById('delete-confirm-error');
+        if (!deleteConfirmInput) return;
+        const val = deleteConfirmInput.value.trim();
+        if (val === 'Vishu@pubg1') {
+            const callback = pendingDeleteCallback;
+            closeDeleteConfirmModal();
+            if (typeof callback === 'function') {
+                callback();
+            }
+        } else {
+            if (deleteConfirmError) deleteConfirmError.textContent = "Incorrect password! Only Vishu can delete records. ❌";
+            deleteConfirmInput.value = '';
+            deleteConfirmInput.focus();
+        }
+    }
+
+    function requestDeleteWithPassword(descriptionText, onDeleteConfirmed) {
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const deleteConfirmDesc = document.getElementById('delete-confirm-desc');
+        const deleteConfirmInput = document.getElementById('delete-confirm-input');
+        const deleteConfirmError = document.getElementById('delete-confirm-error');
+
+        if (!deleteConfirmModal || !deleteConfirmInput) {
+            const pass = prompt(`${descriptionText}\n\nEnter secret password (Vishu@pubg1) to confirm deletion:`);
+            if (pass && pass.trim() === 'Vishu@pubg1') {
+                onDeleteConfirmed();
+            } else if (pass !== null) {
+                alert("Incorrect password! Deletion canceled. ❌");
+            }
+            return;
+        }
+
+        if (deleteConfirmDesc) deleteConfirmDesc.textContent = descriptionText || "Enter password to confirm deletion 🗝️";
+        deleteConfirmInput.value = '';
+        if (deleteConfirmError) deleteConfirmError.textContent = '';
+        pendingDeleteCallback = onDeleteConfirmed;
+
+        deleteConfirmModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+            if (deleteConfirmInput) deleteConfirmInput.focus();
+        }, 150);
+    }
+
+    // Delegation for delete modal events
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#delete-confirm-submit-btn')) {
+            verifyDeletePassword();
+        } else if (e.target.closest('#delete-confirm-close') || e.target.closest('#delete-confirm-overlay') || e.target.closest('#delete-confirm-cancel-btn')) {
+            closeDeleteConfirmModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        if (e.key === 'Enter' && deleteConfirmModal && deleteConfirmModal.classList.contains('active')) {
+            e.preventDefault();
+            verifyDeletePassword();
+        }
+    });
 
     // ==========================================
     // 1. DATA RENDERING FROM CONFIG
@@ -766,14 +991,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Delete button listener
             const delBtn = galleryCard.querySelector('.admin-delete-btn');
             if (delBtn) {
-                delBtn.addEventListener('click', async (e) => {
+                delBtn.addEventListener('click', (e) => {
                     e.stopPropagation(); // Avoid triggering zoom lightbox
-                    const confirmed = confirm(`Delete this memory?\n"${item.caption || 'No Caption'}"`);
-                    if (confirmed) {
+                    requestDeleteWithPassword(`Delete memory "${item.caption || 'Photo'}"?`, async () => {
                         await MemoryBackendManager.deleteMemory(index);
-                        // Re-render
                         renderMemoriesGallery();
-                    }
+                    });
                 });
             }
 
@@ -1179,7 +1402,553 @@ document.addEventListener('DOMContentLoaded', () => {
             let letters = await this.loadLetters();
             letters = letters.filter(l => l.id !== id);
             localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(letters));
-            return letters;
+        }
+    }
+
+    // ==========================================
+    // DAILY STREAK BACKEND MANAGER
+    // ==========================================
+    class StreakBackendManager {
+        static getLocalStorageKey() {
+            return 'lovesite_daily_streak_messages';
+        }
+
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
+        static async loadMessages() {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { data, error } = await client
+                        .from('daily_streak_messages')
+                        .select('*')
+                        .order('timestamp', { ascending: false });
+                    
+                    if (!error && data) {
+                        const parsed = data.map(row => ({
+                            id: row.id || ('streak_' + row.timestamp),
+                            sender: row.sender,
+                            message: row.message,
+                            date_str: row.date_str,
+                            time_str: row.time_str,
+                            timestamp: Number(row.timestamp)
+                        }));
+                        localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(parsed));
+                        return parsed;
+                    }
+                } catch (e) {
+                    console.error("Error loading daily streak messages from Supabase:", e);
+                }
+            }
+            // Fallback to localStorage
+            const stored = localStorage.getItem(this.getLocalStorageKey());
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        static async submitDailyMessage(sender, messageText) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const date_str = `${year}-${month}-${day}`;
+
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const time_str = `${hours}:${minutes} ${ampm}`;
+            const timestamp = now.getTime();
+
+            const newMessage = {
+                id: 'streak_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                sender,
+                message: messageText,
+                date_str,
+                time_str,
+                timestamp
+            };
+
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { error } = await client
+                        .from('daily_streak_messages')
+                        .insert([
+                            {
+                                sender: newMessage.sender,
+                                message: newMessage.message,
+                                date_str: newMessage.date_str,
+                                time_str: newMessage.time_str,
+                                timestamp: newMessage.timestamp
+                            }
+                        ]);
+                    if (error) {
+                        console.error("Supabase daily streak insert error:", error);
+                    }
+                } catch (e) {
+                    console.error("Error inserting daily streak to Supabase:", e);
+                }
+            }
+
+            // Always update localStorage fallback
+            const messages = await this.loadMessages();
+            messages.unshift(newMessage);
+            localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(messages));
+        }
+    }
+
+    // ==========================================
+    // LETTER COMMENTS BACKEND MANAGER
+    // ==========================================
+    class CommentBackendManager {
+        static getLocalStorageKey() {
+            return 'lovesite_letter_comments';
+        }
+
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
+        static async loadComments(letterId) {
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { data, error } = await client
+                        .from('letter_comments')
+                        .select('*')
+                        .eq('letter_id', letterId)
+                        .order('timestamp', { ascending: true });
+
+                    if (!error && data) {
+                        const parsed = data.map(row => ({
+                            id: row.id,
+                            letter_id: row.letter_id,
+                            author_name: row.author_name,
+                            comment_text: row.comment_text,
+                            date_str: row.date_str,
+                            time_str: row.time_str,
+                            timestamp: Number(row.timestamp)
+                        }));
+                        return parsed;
+                    }
+                } catch (e) {
+                    console.error("Error loading letter comments from Supabase:", e);
+                }
+            }
+            // LocalStorage fallback
+            const stored = localStorage.getItem(this.getLocalStorageKey());
+            const allComments = stored ? JSON.parse(stored) : [];
+            return allComments.filter(c => c.letter_id === letterId);
+        }
+
+        static async addComment(letterId, authorName, commentText) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const date_str = `${year}-${month}-${day}`;
+
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const time_str = `${hours}:${minutes} ${ampm}`;
+            const timestamp = now.getTime();
+
+            const newComment = {
+                id: 'comment_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                letter_id: letterId,
+                author_name: authorName,
+                comment_text: commentText,
+                date_str,
+                time_str,
+                timestamp
+            };
+
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { error } = await client
+                        .from('letter_comments')
+                        .insert([
+                            {
+                                letter_id: newComment.letter_id,
+                                author_name: newComment.author_name,
+                                comment_text: newComment.comment_text,
+                                date_str: newComment.date_str,
+                                time_str: newComment.time_str,
+                                timestamp: newComment.timestamp
+                            }
+                        ]);
+                    if (error) {
+                        console.error("Supabase comment insert error:", error);
+                    }
+                } catch (e) {
+                    console.error("Error inserting comment to Supabase:", e);
+                }
+            }
+
+            // LocalStorage fallback
+            const stored = localStorage.getItem(this.getLocalStorageKey());
+            const allComments = stored ? JSON.parse(stored) : [];
+            allComments.push(newComment);
+            localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(allComments));
+            return this.loadComments(letterId);
+        }
+    }
+
+    // Relative Time-Ago Formatter (e.g. 23s ago, 5m ago, 3h ago, 2d ago)
+    function formatTimeAgo(timestamp) {
+        if (!timestamp) return 'Just now';
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - Number(timestamp)) / 1000);
+
+        if (elapsedSeconds < 10) return 'Just now';
+        if (elapsedSeconds < 60) return `${elapsedSeconds}s ago`;
+
+        const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+        if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+
+        const elapsedHours = Math.floor(elapsedMinutes / 60);
+        if (elapsedHours < 24) return `${elapsedHours}h ago`;
+
+        const elapsedDays = Math.floor(elapsedHours / 24);
+        if (elapsedDays < 7) return `${elapsedDays}d ago`;
+
+        const elapsedWeeks = Math.floor(elapsedDays / 7);
+        if (elapsedWeeks < 4) return `${elapsedWeeks}w ago`;
+
+        const elapsedMonths = Math.floor(elapsedDays / 30);
+        if (elapsedMonths < 12) return `${elapsedMonths}mo ago`;
+
+        const elapsedYears = Math.floor(elapsedDays / 365);
+        return `${elapsedYears}y ago`;
+    }
+
+    // Helper to render letter comments inside read modal (Instagram Style)
+    async function renderLetterComments(letterId) {
+        const listContainer = document.getElementById('letter-comments-list');
+        const badgeContainer = document.getElementById('letter-comments-count-badge');
+        const authorInput = document.getElementById('comment-author-input');
+        if (!listContainer) return;
+
+        // Remember author name if stored previously
+        const savedName = localStorage.getItem('lovesite_commenter_name');
+        if (savedName && authorInput && !authorInput.value) {
+            authorInput.value = savedName;
+        }
+
+        listContainer.innerHTML = `<div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.5rem 0;">Loading comments... 💭</div>`;
+
+        const comments = await CommentBackendManager.loadComments(letterId);
+
+        if (badgeContainer) badgeContainer.textContent = `${comments.length} Comment${comments.length === 1 ? '' : 's'}`;
+
+        if (comments.length === 0) {
+            listContainer.innerHTML = `<div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.8rem 0;">No comments yet. Be the first to comment! 💕</div>`;
+            return;
+        }
+
+        listContainer.innerHTML = '';
+        comments.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'insta-comment-item';
+
+            const nameLower = c.author_name.toLowerCase();
+            const isAnu = nameLower.includes('anu');
+            const isVishu = nameLower.includes('vishu');
+
+            let avatarClass = 'visitor';
+            let initial = c.author_name.charAt(0).toUpperCase() || '💬';
+            let userClass = '';
+
+            if (isAnu) {
+                avatarClass = 'anu';
+                initial = '💜';
+                userClass = 'anu';
+            } else if (isVishu) {
+                avatarClass = 'vishu';
+                initial = '❤️';
+                userClass = 'vishu';
+            }
+
+            item.innerHTML = `
+                <div class="insta-avatar ${avatarClass}">${initial}</div>
+                <div class="insta-comment-content">
+                    <div>
+                        <span class="insta-username ${userClass}">${c.author_name}</span>
+                        <span class="insta-comment-text">${c.comment_text.replace(/\n/g, '<br>')}</span>
+                    </div>
+                    <div class="insta-comment-meta">
+                        <span>${formatTimeAgo(c.timestamp)}</span>
+                    </div>
+                </div>
+                <button type="button" class="insta-like-btn" aria-label="Like comment">
+                    <i class="fa-regular fa-heart"></i>
+                </button>
+            `;
+
+            // Like heart toggle handler
+            const likeBtn = item.querySelector('.insta-like-btn');
+            if (likeBtn) {
+                likeBtn.addEventListener('click', () => {
+                    likeBtn.classList.toggle('liked');
+                    const icon = likeBtn.querySelector('i');
+                    if (likeBtn.classList.contains('liked')) {
+                        icon.className = 'fa-solid fa-heart';
+                    } else {
+                        icon.className = 'fa-regular fa-heart';
+                    }
+                });
+            }
+
+            listContainer.appendChild(item);
+        });
+    }
+
+    // Quick Emoji Reaction Bar Click Handlers
+    document.querySelectorAll('.insta-emoji-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const emoji = btn.getAttribute('data-emoji');
+            const commentInput = document.getElementById('comment-text-input');
+            if (commentInput && emoji) {
+                commentInput.value += emoji;
+                commentInput.focus();
+            }
+        });
+    });
+
+    // Helper to calculate daily streak statistics
+    function calculateStreakStats(messages) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const dateSendersMap = {};
+        const dateMessagesMap = {};
+
+        messages.forEach(msg => {
+            const d = msg.date_str;
+            if (!dateSendersMap[d]) {
+                dateSendersMap[d] = new Set();
+                dateMessagesMap[d] = [];
+            }
+            dateSendersMap[d].add(msg.sender);
+            dateMessagesMap[d].push(msg);
+        });
+
+        const anuTodayMsg = dateMessagesMap[todayStr] ? dateMessagesMap[todayStr].find(m => m.sender === 'Anu') : null;
+        const vishuTodayMsg = dateMessagesMap[todayStr] ? dateMessagesMap[todayStr].find(m => m.sender === 'Vishu') : null;
+
+        const anuTodaySubmitted = !!anuTodayMsg;
+        const vishuTodaySubmitted = !!vishuTodayMsg;
+        const todayComplete = dateSendersMap[todayStr] ? dateSendersMap[todayStr].size === 2 : false;
+
+        // Calculate consecutive streak
+        let currentStreak = 0;
+        let checkDate = new Date();
+
+        if (todayComplete) {
+            while (true) {
+                const y = checkDate.getFullYear();
+                const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+                const d = String(checkDate.getDate()).padStart(2, '0');
+                const dStr = `${y}-${m}-${d}`;
+
+                if (dateSendersMap[dStr] && dateSendersMap[dStr].size === 2) {
+                    currentStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+        } else {
+            // Check back starting from yesterday
+            checkDate.setDate(checkDate.getDate() - 1);
+            while (true) {
+                const y = checkDate.getFullYear();
+                const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+                const d = String(checkDate.getDate()).padStart(2, '0');
+                const dStr = `${y}-${m}-${d}`;
+
+                if (dateSendersMap[dStr] && dateSendersMap[dStr].size === 2) {
+                    currentStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Milestone badge logic
+        let badgeText = "🌱 First Spark";
+        let badgeIcon = "🌱";
+        if (currentStreak >= 50) {
+            badgeText = "♾️ Eternal Flame"; badgeIcon = "♾️";
+        } else if (currentStreak >= 30) {
+            badgeText = "👑 Royal Souls"; badgeIcon = "👑";
+        } else if (currentStreak >= 14) {
+            badgeText = "✨ Enchanted Bond"; badgeIcon = "✨";
+        } else if (currentStreak >= 7) {
+            badgeText = "🔥 Flame of Love"; badgeIcon = "🔥";
+        } else if (currentStreak >= 3) {
+            badgeText = "💖 Sweet Duo"; badgeIcon = "💖";
+        }
+
+        return {
+            currentStreak,
+            anuTodaySubmitted,
+            vishuTodaySubmitted,
+            anuTodayMsg,
+            vishuTodayMsg,
+            todayComplete,
+            todayStr,
+            badgeText,
+            badgeIcon,
+            dateSendersMap,
+            dateMessagesMap
+        };
+    }
+
+    // Main render function for Daily Streak
+    async function renderStreakView() {
+        const streakCounterNumber = document.getElementById('streak-counter-number');
+        const streakPillCount = document.getElementById('streak-pill-count');
+        const streakBadgeText = document.getElementById('streak-badge-text');
+        const streakBadgeIcon = document.getElementById('streak-badge-icon');
+        const streakStatusAnu = document.getElementById('streak-status-anu');
+        const streakStatusVishu = document.getElementById('streak-status-vishu');
+        const streakCalendarGrid = document.getElementById('streak-calendar-grid');
+        const streakCalendarMonthTitle = document.getElementById('streak-calendar-month-title');
+        const streakHistoryFeed = document.getElementById('streak-history-feed');
+
+        const messages = await StreakBackendManager.loadMessages();
+        const stats = calculateStreakStats(messages);
+
+        // Update Counter Banner
+        if (streakCounterNumber) streakCounterNumber.textContent = `${stats.currentStreak}-Day Streak`;
+        if (streakPillCount) streakPillCount.textContent = `🔥 ${stats.currentStreak}`;
+        if (streakBadgeText) streakBadgeText.textContent = stats.badgeText;
+        if (streakBadgeIcon) streakBadgeIcon.textContent = stats.badgeIcon;
+
+        // Update Today's Status Badges
+        if (streakStatusAnu) {
+            if (stats.anuTodaySubmitted) {
+                streakStatusAnu.innerHTML = `Anu 💜: <span style="color: #4ade80; font-weight: 600;">✅ Submitted (${stats.anuTodayMsg.time_str})</span>`;
+            } else {
+                streakStatusAnu.innerHTML = `Anu 💜: <span style="color: #ff758f;">⏳ Waiting</span>`;
+            }
+        }
+
+        if (streakStatusVishu) {
+            if (stats.vishuTodaySubmitted) {
+                streakStatusVishu.innerHTML = `Vishu ❤️: <span style="color: #4ade80; font-weight: 600;">✅ Submitted (${stats.vishuTodayMsg.time_str})</span>`;
+            } else {
+                streakStatusVishu.innerHTML = `Vishu ❤️: <span style="color: #ff758f;">⏳ Waiting</span>`;
+            }
+        }
+
+        // Render Monthly Calendar
+        if (streakCalendarGrid) {
+            streakCalendarGrid.innerHTML = '';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            if (streakCalendarMonthTitle) streakCalendarMonthTitle.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Empty offset cells
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'streak-day-cell';
+                emptyCell.style.opacity = '0.2';
+                streakCalendarGrid.appendChild(emptyCell);
+            }
+
+            // Day cells
+            for (let d = 1; d <= daysInMonth; d++) {
+                const cell = document.createElement('div');
+                cell.className = 'streak-day-cell';
+
+                const mStr = String(month + 1).padStart(2, '0');
+                const dStr = String(d).padStart(2, '0');
+                const dateKey = `${year}-${mStr}-${dStr}`;
+
+                const senders = stats.dateSendersMap[dateKey];
+                const count = senders ? senders.size : 0;
+
+                if (count === 2) {
+                    cell.classList.add('completed');
+                    cell.innerHTML = `<span style="font-weight: 700; color: #fff;">${d}</span><span style="font-size: 0.75rem;">💖</span>`;
+                } else if (count === 1) {
+                    cell.classList.add('partial');
+                    cell.innerHTML = `<span style="font-weight: 700; color: #e8c8ff;">${d}</span><span style="font-size: 0.75rem;">⏳</span>`;
+                } else {
+                    cell.innerHTML = `<span style="color: var(--text-muted);">${d}</span>`;
+                }
+
+                if (dateKey === stats.todayStr) {
+                    cell.classList.add('today');
+                }
+
+                streakCalendarGrid.appendChild(cell);
+            }
+        }
+
+        // Render History Feed
+        if (streakHistoryFeed) {
+            streakHistoryFeed.innerHTML = '';
+            
+            const datesOrdered = Object.keys(stats.dateMessagesMap).sort((a, b) => b.localeCompare(a));
+
+            if (datesOrdered.length === 0) {
+                streakHistoryFeed.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem 0;">No check-ins recorded yet. Start today's streak! 🔥</div>`;
+                return;
+            }
+
+            datesOrdered.forEach(dateKey => {
+                const groupMsgs = stats.dateMessagesMap[dateKey];
+                const isBoth = groupMsgs.length >= 2 && new Set(groupMsgs.map(m => m.sender)).size === 2;
+
+                const card = document.createElement('div');
+                card.className = 'glass-card';
+                card.style.cssText = 'padding: 1.2rem; border-radius: 14px; border: 1px solid var(--border-glass); text-align: left;';
+
+                let notesHtml = '';
+                groupMsgs.forEach(m => {
+                    const badgeColor = m.sender === 'Anu' ? '#c084fc' : '#ff758f';
+                    const heart = m.sender === 'Anu' ? '💜' : '❤️';
+                    notesHtml += `
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.8rem 1rem; border-radius: 10px; margin-top: 0.6rem; border-left: 3px solid ${badgeColor};">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.3rem;">
+                                <strong style="color: ${badgeColor};">${m.sender} ${heart}</strong>
+                                <span style="color: var(--text-muted);">🕒 ${m.time_str}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: rgba(255,255,255,0.92); line-height: 1.5;">${m.message.replace(/\n/g, '<br>')}</div>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary-light); background: rgba(255,255,255,0.06); padding: 0.25rem 0.7rem; border-radius: 20px;">📅 ${dateKey}</span>
+                        ${isBoth ? '<span style="font-size: 0.78rem; color: #4ade80; font-weight: 600;">✨ 2-Person Complete</span>' : '<span style="font-size: 0.78rem; color: #ff758f;">⏳ 1 Check-in</span>'}
+                    </div>
+                    ${notesHtml}
+                `;
+
+                streakHistoryFeed.appendChild(card);
+            });
         }
     }
 
@@ -1216,11 +1985,88 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeTab = 'Anu'; // Default view: Letters written for Anu
     let currentlySelectedLetterId = null;
 
-    // Render list grid of letters
-    async function renderJournalList() {
-        if (!journalGrid) return;
-        journalGrid.innerHTML = '';
+    // Full Letters Journal Modal Bindings
+    const journalFullModal = document.getElementById('journal-full-modal');
+    const journalFullOverlay = document.getElementById('journal-full-overlay');
+    const journalFullClose = document.getElementById('journal-full-close');
+    const modalJournalGrid = document.getElementById('modal-journal-grid');
+    const modalTabAnuBtn = document.getElementById('modal-tab-anu-btn');
+    const modalTabVishuBtn = document.getElementById('modal-tab-vishu-btn');
+    const modalCountAnu = document.getElementById('modal-count-anu');
+    const modalCountVishu = document.getElementById('modal-count-vishu');
+    const modalWriteLetterBtn = document.getElementById('modal-write-letter-btn');
 
+    const openJournalFullModal = async () => {
+        renderJournalList();
+        renderStreakView();
+        if (journalFullModal) {
+            journalFullModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    const closeJournalFullModal = () => {
+        if (journalFullModal) {
+            journalFullModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    };
+
+    // Window View Navigation Tabs (Letters vs Streak)
+    const winTabLetters = document.getElementById('win-tab-letters');
+    const winTabStreak = document.getElementById('win-tab-streak');
+    const lettersWindowView = document.getElementById('letters-window-view');
+    const streakWindowView = document.getElementById('streak-window-view');
+
+    if (winTabLetters && winTabStreak) {
+        winTabLetters.addEventListener('click', () => {
+            winTabLetters.classList.add('active');
+            winTabStreak.classList.remove('active');
+            if (lettersWindowView) lettersWindowView.style.display = 'flex';
+            if (streakWindowView) streakWindowView.style.display = 'none';
+        });
+
+        winTabStreak.addEventListener('click', async () => {
+            winTabStreak.classList.add('active');
+            winTabLetters.classList.remove('active');
+            if (lettersWindowView) lettersWindowView.style.display = 'none';
+            if (streakWindowView) streakWindowView.style.display = 'flex';
+            await renderStreakView();
+        });
+    }
+
+    // Submit Daily Streak Check-in
+    const streakSubmitBtn = document.getElementById('streak-submit-btn');
+    const streakInputContent = document.getElementById('streak-input-content');
+    const streakSubmitError = document.getElementById('streak-submit-error');
+
+    if (streakSubmitBtn) {
+        streakSubmitBtn.addEventListener('click', async () => {
+            const content = streakInputContent.value.trim();
+            const selectedRadio = document.querySelector('input[name="streak-sender-choice"]:checked');
+            const sender = selectedRadio ? selectedRadio.value : 'Anu';
+
+            if (!content) {
+                if (streakSubmitError) streakSubmitError.textContent = "Please write a daily note before submitting!";
+                return;
+            }
+
+            if (streakSubmitError) streakSubmitError.textContent = "";
+            streakSubmitBtn.disabled = true;
+            streakSubmitBtn.querySelector('span').textContent = "Submitting... 🔥";
+
+            await StreakBackendManager.submitDailyMessage(sender, content);
+
+            streakInputContent.value = "";
+            streakSubmitBtn.disabled = false;
+            streakSubmitBtn.querySelector('span').textContent = "🔥 Submit Today's Check-in";
+
+            await renderStreakView();
+        });
+    }
+
+    // Render list grid of letters for both page section & floating modal window
+    async function renderJournalList() {
         const allLetters = await JournalBackendManager.loadLetters();
 
         // Sort: newest first
@@ -1232,46 +2078,85 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update count badges
         const countForAnu = allLetters.filter(l => l.recipient === 'Anu').length;
         const countForVishu = allLetters.filter(l => l.recipient === 'Vishu').length;
+
         if (countAnu) countAnu.textContent = countForAnu;
         if (countVishu) countVishu.textContent = countForVishu;
+        if (modalCountAnu) modalCountAnu.textContent = countForAnu;
+        if (modalCountVishu) modalCountVishu.textContent = countForVishu;
 
+        const renderTarget = (container, isModal = false) => {
+            if (!container) return;
+            container.innerHTML = '';
 
-        if (filtered.length === 0) {
-            journalGrid.innerHTML = `<div class="journal-empty-state">No letters yet ❤️</div>`;
-            return;
-        }
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="journal-empty-state" style="padding: 2rem 1rem; font-size: 1.6rem;">No letters yet ❤️</div>`;
+                return;
+            }
 
-        filtered.forEach(letter => {
-            const card = document.createElement('div');
-            card.className = 'journal-card glass-card';
-            
-            // Get text preview
-            const previewText = letter.content.length > 150 
-                ? letter.content.substring(0, 150) + '...'
-                : letter.content;
+            filtered.forEach(letter => {
+                const card = document.createElement('div');
+                const badgeClass = letter.recipient.toLowerCase();
 
-            const badgeClass = letter.recipient.toLowerCase();
+                if (isModal) {
+                    card.className = 'journal-title-card glass-card';
+                    card.style.cssText = 'padding: 1.2rem 1.4rem; text-align: left; cursor: pointer; transition: all 0.25s ease; border: 1px solid var(--border-glass); border-radius: 14px;';
+                    card.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.4rem;">
+                            <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #e8c8ff; margin: 0; line-height: 1.3;">✉️ ${letter.title}</h4>
+                            <span class="journal-badge ${badgeClass}">${letter.recipient}</span>
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 1rem;">
+                            <span>📅 ${letter.date}</span>
+                            <span>🕒 ${letter.time}</span>
+                        </div>
+                    `;
 
-            card.innerHTML = `
-                <div class="journal-card-header">
-                    <h4>${letter.title}</h4>
-                    <span class="journal-badge ${badgeClass}">${letter.recipient}</span>
-                </div>
-                <div class="journal-card-meta">
-                    <span>📅 ${letter.date}</span>
-                    <span>🕒 ${letter.time}</span>
-                </div>
-                <div class="journal-card-preview">${previewText.replace(/\n/g, '<br>')}</div>
-                <button type="button" class="btn-read" data-id="${letter.id}">Read Letter 💜</button>
-            `;
+                    // Hover effect
+                    card.addEventListener('mouseenter', () => {
+                        card.style.transform = 'translateY(-2px)';
+                        card.style.borderColor = 'rgba(255, 117, 143, 0.45)';
+                        card.style.boxShadow = '0 6px 20px rgba(255, 77, 109, 0.2)';
+                    });
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = 'none';
+                        card.style.borderColor = 'var(--border-glass)';
+                        card.style.boxShadow = 'none';
+                    });
 
-            // Click listener for reading
-            card.querySelector('.btn-read').addEventListener('click', () => {
-                openReadModal(letter);
+                    // Click anywhere on title card to open full letter!
+                    card.addEventListener('click', () => {
+                        openReadModal(letter);
+                    });
+                } else {
+                    card.className = 'journal-card glass-card';
+                    const previewText = letter.content.length > 150 
+                        ? letter.content.substring(0, 150) + '...'
+                        : letter.content;
+
+                    card.innerHTML = `
+                        <div class="journal-card-header">
+                            <h4>${letter.title}</h4>
+                            <span class="journal-badge ${badgeClass}">${letter.recipient}</span>
+                        </div>
+                        <div class="journal-card-meta">
+                            <span>📅 ${letter.date}</span>
+                            <span>🕒 ${letter.time}</span>
+                        </div>
+                        <div class="journal-card-preview">${previewText.replace(/\n/g, '<br>')}</div>
+                        <button type="button" class="btn-read" data-id="${letter.id}">Read Letter 💜</button>
+                    `;
+
+                    card.querySelector('.btn-read').addEventListener('click', () => {
+                        openReadModal(letter);
+                    });
+                }
+
+                container.appendChild(card);
             });
+        };
 
-            journalGrid.appendChild(card);
-        });
+        renderTarget(journalGrid, false);
+        renderTarget(modalJournalGrid, true);
     }
 
     // Modal Control functions
@@ -1285,7 +2170,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeWriteModal = () => {
         writeLetterModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
+        if (!journalFullModal.classList.contains('active') && !readLetterModal.classList.contains('active')) {
+            document.body.style.overflow = 'auto';
+        }
     };
 
     const openReadModal = (letter) => {
@@ -1297,34 +2184,94 @@ document.addEventListener('DOMContentLoaded', () => {
         readLetterDatetime.innerHTML = `📅 ${letter.date} &nbsp;&nbsp;&nbsp; 🕒 ${letter.time}`;
         readLetterBody.innerHTML = letter.content.replace(/\n/g, '<br>');
 
+        // Render comments for this letter
+        renderLetterComments(letter.id);
+
         readLetterModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     };
 
-    const closeReadModal = () => {
-        readLetterModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    };
+    // Post Letter Comment Listener
+    const commentPostBtn = document.getElementById('comment-post-btn');
+    const commentAuthorInput = document.getElementById('comment-author-input');
+    const commentTextInput = document.getElementById('comment-text-input');
+    const commentPostError = document.getElementById('comment-post-error');
 
-    // Attach Tab Button click listeners
-    if (tabAnuBtn && tabVishuBtn) {
-        tabAnuBtn.addEventListener('click', () => {
-            activeTab = 'Anu';
-            tabAnuBtn.classList.add('active');
-            tabVishuBtn.classList.remove('active');
-            renderJournalList();
-        });
+    if (commentPostBtn) {
+        commentPostBtn.addEventListener('click', async () => {
+            const author = commentAuthorInput.value.trim();
+            const text = commentTextInput.value.trim();
 
-        tabVishuBtn.addEventListener('click', () => {
-            activeTab = 'Vishu';
-            tabVishuBtn.classList.add('active');
-            tabAnuBtn.classList.remove('active');
-            renderJournalList();
+            if (!currentlySelectedLetterId) return;
+
+            if (!author) {
+                if (commentPostError) commentPostError.textContent = "Please enter your name before posting!";
+                commentAuthorInput.focus();
+                return;
+            }
+
+            if (!text) {
+                if (commentPostError) commentPostError.textContent = "Please write a comment!";
+                commentTextInput.focus();
+                return;
+            }
+
+            if (commentPostError) commentPostError.textContent = "";
+            commentPostBtn.disabled = true;
+            const btnSpan = commentPostBtn.querySelector('span');
+            if (btnSpan) btnSpan.textContent = "Posting... 💬";
+
+            // Save name in localStorage for convenience
+            localStorage.setItem('lovesite_commenter_name', author);
+
+            await CommentBackendManager.addComment(currentlySelectedLetterId, author, text);
+
+            commentTextInput.value = "";
+            commentPostBtn.disabled = false;
+            if (btnSpan) btnSpan.textContent = "💬 Post Comment";
+
+            await renderLetterComments(currentlySelectedLetterId);
         });
     }
 
+    const closeReadModal = () => {
+        readLetterModal.classList.remove('active');
+        if (!journalFullModal.classList.contains('active') && !writeLetterModal.classList.contains('active')) {
+            document.body.style.overflow = 'auto';
+        }
+    };
+
+    // Tab switcher helper
+    const setJournalTab = (tab) => {
+        activeTab = tab;
+        if (tab === 'Anu') {
+            if (tabAnuBtn) tabAnuBtn.classList.add('active');
+            if (tabVishuBtn) tabVishuBtn.classList.remove('active');
+            if (modalTabAnuBtn) modalTabAnuBtn.classList.add('active');
+            if (modalTabVishuBtn) modalTabVishuBtn.classList.remove('active');
+        } else {
+            if (tabVishuBtn) tabVishuBtn.classList.add('active');
+            if (tabAnuBtn) tabAnuBtn.classList.remove('active');
+            if (modalTabVishuBtn) modalTabVishuBtn.classList.add('active');
+            if (modalTabAnuBtn) modalTabAnuBtn.classList.remove('active');
+        }
+        renderJournalList();
+    };
+
+    if (tabAnuBtn) tabAnuBtn.addEventListener('click', () => setJournalTab('Anu'));
+    if (tabVishuBtn) tabVishuBtn.addEventListener('click', () => setJournalTab('Vishu'));
+    if (modalTabAnuBtn) modalTabAnuBtn.addEventListener('click', () => setJournalTab('Anu'));
+    if (modalTabVishuBtn) modalTabVishuBtn.addEventListener('click', () => setJournalTab('Vishu'));
+
     // Attach modal events
     if (writeLetterBtn) writeLetterBtn.addEventListener('click', openWriteModal);
+    if (modalWriteLetterBtn) modalWriteLetterBtn.addEventListener('click', openWriteModal);
+    const floatingLetterBtn = document.getElementById('floating-letter-btn');
+    if (floatingLetterBtn) floatingLetterBtn.addEventListener('click', openJournalFullModal);
+
+    if (journalFullClose) journalFullClose.addEventListener('click', closeJournalFullModal);
+    if (journalFullOverlay) journalFullOverlay.addEventListener('click', closeJournalFullModal);
+
     if (writeLetterClose) writeLetterClose.addEventListener('click', closeWriteModal);
     if (writeLetterOverlay) writeLetterOverlay.addEventListener('click', closeWriteModal);
     if (journalCancelBtn) journalCancelBtn.addEventListener('click', closeWriteModal);
@@ -1368,15 +2315,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Delete letter click
     if (readDeleteBtn) {
-        readDeleteBtn.addEventListener('click', async () => {
+        readDeleteBtn.addEventListener('click', () => {
             if (!currentlySelectedLetterId) return;
 
-            const confirmed = confirm("Are you sure you want to delete this letter permanently?");
-            if (confirmed) {
+            requestDeleteWithPassword("Confirm deleting this letter permanently?", async () => {
                 await JournalBackendManager.deleteLetter(currentlySelectedLetterId);
                 closeReadModal();
                 renderJournalList();
-            }
+            });
         });
     }
 
@@ -1619,13 +2565,20 @@ document.addEventListener('DOMContentLoaded', () => {
     hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
         navMenu.classList.toggle('active');
+        if (navMenu.classList.contains('active')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
     });
     
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.nav-link');
+        if (link && navMenu.classList.contains('active')) {
             hamburger.classList.remove('active');
             navMenu.classList.remove('active');
-        });
+            document.body.style.overflow = 'auto';
+        }
     });
     
     // Scroll reveal logic (Intersection Observer)
@@ -2018,6 +2971,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     lightboxClose.addEventListener('click', closeLightbox);
     lightboxOverlay.addEventListener('click', closeLightbox);
+    if (lightboxImg) {
+        lightboxImg.style.cursor = 'pointer';
+        lightboxImg.addEventListener('click', closeLightbox);
+    }
     lightboxNext.addEventListener('click', showNextPhoto);
     lightboxPrev.addEventListener('click', showPrevPhoto);
     
@@ -2223,6 +3180,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // ==========================================
+    // 10. PWA SERVICE WORKER & INSTALL APP LOGIC
+    // ==========================================
+    let deferredPrompt = null;
+    const pwaInstallModal = document.getElementById('pwa-install-modal');
+    const pwaInstallOverlay = document.getElementById('pwa-install-overlay');
+    const pwaInstallClose = document.getElementById('pwa-install-close');
+    const pwaModalCloseBtn = document.getElementById('pwa-modal-close-btn');
+    const pwaModalActionBtn = document.getElementById('pwa-modal-action-btn');
+    const pwaInstallBody = document.getElementById('pwa-install-body');
+    const pwaButtons = document.querySelectorAll('.pwa-install-btn');
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then((reg) => console.log('[PWA] Service Worker registered successfully:', reg.scope))
+                .catch((err) => console.warn('[PWA] Service Worker registration failed:', err));
+        });
+    }
+
+    // Capture install prompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[PWA] beforeinstallprompt event captured');
+        pwaButtons.forEach(btn => btn.style.display = 'inline-flex');
+    });
+
+    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+
+    const openPwaInstallModal = () => {
+        if (!pwaInstallModal) return;
+        if (isStandalone()) {
+            pwaInstallBody.innerHTML = `
+                <div style="text-align: center;">
+                    <span style="font-size: 2rem;">🎉</span>
+                    <p style="margin-top: 0.5rem; font-weight: 600; color: #fff;">Already Installed!</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">You are using <b>Our Love Story</b> app!</p>
+                </div>
+            `;
+            if (pwaModalActionBtn) pwaModalActionBtn.style.display = 'none';
+        } else if (isIOS()) {
+            pwaInstallBody.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div><b>Step 1:</b> Open this website in <b>Safari</b> on your iPhone/iPad 🧭</div>
+                    <div><b>Step 2:</b> Tap the <b>Share</b> button (<i class="fa-solid fa-arrow-up-from-bracket" style="color: var(--secondary-light);"></i> at bottom of screen)</div>
+                    <div><b>Step 3:</b> Scroll down and tap <b>"Add to Home Screen"</b> 📲</div>
+                    <div><b>Step 4:</b> Tap <b>"Add"</b> in top right corner. Done! 🎉</div>
+                </div>
+            `;
+            if (pwaModalActionBtn) pwaModalActionBtn.style.display = 'none';
+        } else if (deferredPrompt) {
+            pwaInstallBody.innerHTML = `
+                <p>Click <b>Install Now</b> below to download & install <b>Our Love Story</b> app on your home screen or desktop!</p>
+            `;
+            if (pwaModalActionBtn) {
+                pwaModalActionBtn.style.display = 'inline-block';
+                pwaModalActionBtn.textContent = '📲 Install Now';
+            }
+        } else {
+            pwaInstallBody.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div><b>Android / Desktop:</b> Open browser menu (<i class="fa-solid fa-ellipsis-vertical"></i>) and tap <b>"Install app"</b> or <b>"Add to Home Screen"</b> 📲</div>
+                    <div><b>iPhone / iPad:</b> Open Safari, tap Share (<i class="fa-solid fa-arrow-up-from-bracket"></i>), and select <b>"Add to Home Screen"</b> 🌸</div>
+                </div>
+            `;
+            if (pwaModalActionBtn) pwaModalActionBtn.style.display = 'none';
+        }
+
+        pwaInstallModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closePwaInstallModal = () => {
+        if (!pwaInstallModal) return;
+        pwaInstallModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    };
+
+    // Event listener for all Install App buttons (including nested span/icon clicks)
+    document.addEventListener('click', (e) => {
+        const installBtn = e.target.closest('.pwa-install-btn');
+        if (installBtn) {
+            e.preventDefault();
+            console.log('[PWA] Install button clicked');
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('[PWA] User accepted install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                openPwaInstallModal();
+            }
+        }
+    });
+
+    if (pwaModalActionBtn) {
+        pwaModalActionBtn.addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('[PWA] User accepted install prompt');
+                    }
+                    deferredPrompt = null;
+                    closePwaInstallModal();
+                });
+            }
+        });
+    }
+
+    if (pwaInstallClose) pwaInstallClose.addEventListener('click', closePwaInstallModal);
+    if (pwaInstallOverlay) pwaInstallOverlay.addEventListener('click', closePwaInstallModal);
+    if (pwaModalCloseBtn) pwaModalCloseBtn.addEventListener('click', closePwaInstallModal);
+
     initParticles();
     animateParticles();
 });

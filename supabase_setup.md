@@ -69,11 +69,33 @@ create table visitor_history (
 );
 
 -- Enable Read & Write permissions for anonymous public users
-alter table visitor_history enable row level security;
-create policy "Allow public read access to visitor_history" on visitor_history for select using (true);
-create policy "Allow public insert access to visitor_history" on visitor_history for insert with check (true);
-create policy "Allow public update access to visitor_history" on visitor_history for update using (true);
-create policy "Allow public delete access to visitor_history" on visitor_history for delete using (true);
+-- 4. Create Daily Streak Messages Table
+create table daily_streak_messages (
+  id uuid default gen_random_uuid() primary key,
+  sender text not null,
+  message text not null,
+  date_str text not null,
+  time_str text not null,
+  timestamp bigint not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 5. Create Letter Comments Table
+create table letter_comments (
+  id uuid default gen_random_uuid() primary key,
+  letter_id text not null,
+  author_name text not null,
+  comment_text text not null,
+  date_str text not null,
+  time_str text not null,
+  timestamp bigint not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table letter_comments enable row level security;
+create policy "Allow public read access to letter_comments" on letter_comments for select using (true);
+create policy "Allow public insert access to letter_comments" on letter_comments for insert with check (true);
+create policy "Allow public delete access to letter_comments" on letter_comments for delete using (true);
 ```
 
 4. Click **Run** (bottom right). You should see `Success` or `Query returned no rows`.

@@ -34,6 +34,7 @@ const CONFIG = {
     // ------------------------------------------
     girlfriendName: "Anu",             // Your girlfriend's name (Anu)
     boyfriendName: "Vishu",            // Your name (Vishu)
+    vishuPfpPath: "assets/images/vishu_pfp.jpg", // Vishu's profile photo
     coupleNames: "Anu & Vishu",        // Couple name tag used in navigation / logo
 
     // ------------------------------------------
