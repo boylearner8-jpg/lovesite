@@ -1,36 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2d0b4a"/>
-      <stop offset="50%" stop-color="#1a0927"/>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0533"/>
       <stop offset="100%" stop-color="#0f0518"/>
-    </linearGradient>
-    <linearGradient id="heart-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff4d8d"/>
-      <stop offset="50%" stop-color="#e92b5a"/>
-      <stop offset="100%" stop-color="#9a184e"/>
-    </linearGradient>
-    <linearGradient id="glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e8c8ff" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#e92b5a" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#e92b5a" flood-opacity="0.5"/>
-    </filter>
+    </radialGradient>
+    <radialGradient id="heart" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ff758f"/>
+      <stop offset="60%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#7928ca"/>
+    </radialGradient>
   </defs>
-  
-  <!-- Rounded App Icon Background -->
-  <rect width="512" height="512" rx="115" fill="url(#bg-grad)"/>
-  
-  <!-- Outer Glow Ring -->
-  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#glow-grad)" stroke-width="4" opacity="0.4"/>
-  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#glow-grad)" stroke-width="2" opacity="0.2"/>
-  
-  <!-- Heart Icon -->
-  <path filter="url(#drop-shadow)" d="M256,432 C251.6,432 20.8,284.8 20.8,168.8 C20.8,103.2 73.6,50.4 139.2,50.4 C179.2,50.4 215.2,70.4 236.8,103.2 C258.4,70.4 294.4,50.4 334.4,50.4 C400,50.4 452.8,103.2 452.8,168.8 C452.8,284.8 222.4,432 256,432 Z" fill="url(#heart-grad)"/>
-  
-  <!-- Sparkles -->
-  <path d="M140 120 Q140 140 160 140 Q140 140 140 160 Q140 140 120 140 Q140 140 140 120 Z" fill="#ffffff" opacity="0.9"/>
-  <path d="M360 110 Q360 125 375 125 Q360 125 360 140 Q360 125 345 125 Q360 125 360 110 Z" fill="#ffffff" opacity="0.8"/>
-  <path d="M380 280 Q380 290 390 290 Q380 290 380 300 Q380 290 370 290 Q380 290 380 280 Z" fill="#e8c8ff" opacity="0.7"/>
+  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
+  <path d="M256 370 C256 370 130 290 130 200 C130 160 162 130 200 130 C225 130 248 145 256 165 C264 145 287 130 312 130 C350 130 382 160 382 200 C382 290 256 370 256 370Z" fill="url(#heart)" opacity="0.95"/>
+  <circle cx="256" cy="256" r="200" fill="none" stroke="rgba(192,132,252,0.15)" stroke-width="2"/>
 </svg>

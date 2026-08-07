@@ -3266,18 +3266,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const installBtn = e.target.closest('.pwa-install-btn');
         if (installBtn) {
             e.preventDefault();
-            console.log('[PWA] Install button clicked');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('[PWA] User accepted install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                openPwaInstallModal();
-            }
+            console.log('[PWA] Install button clicked, deferredPrompt:', !!deferredPrompt);
+            // Always open modal — it shows native prompt button OR manual instructions
+            openPwaInstallModal();
         }
     });
 
