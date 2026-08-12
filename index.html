@@ -627,9 +627,9 @@
     <audio id="bg-audio" loop></audio>
 
     <!-- Floating Letters Journal Pill Button (Bottom Left) -->
-    <button id="floating-letter-btn" class="floating-letter-pill glass-card" aria-label="Open Letters Journal" title="Open Letters Journal">
-        <i class="fa-solid fa-envelope floating-pill-icon"></i>
-        <span class="floating-pill-text">Letters</span>
+    <button id="floating-letter-btn" class="floating-letter-pill glass-card" aria-label="Open Our Space" title="Open Our Space">
+        <img src="assets/images/letters_cat_icon.png" alt="Our Space Cat Icon" class="floating-pill-img-icon">
+        <span class="floating-pill-text">Our Space</span>
     </button>
 
     <!-- FULL LETTERS JOURNAL MODAL WINDOW -->
@@ -638,14 +638,18 @@
         <div class="modal-content glass-card journal-full-modal-card">
             <button class="modal-close" id="journal-full-close" aria-label="Close">&times;</button>
             
-            <!-- Window Navigation Switcher (Letters vs Streak) -->
+            <!-- Window Navigation Switcher (Letters vs Streak vs Take Care) -->
             <div class="window-nav-tabs">
                 <button type="button" class="window-nav-btn active" id="win-tab-letters">
-                    <span>Letters Journal 💌</span>
+                    <img src="assets/images/letters_cat_icon.png" alt="Cat Icon" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; flex-shrink: 0; filter: drop-shadow(0 0 4px rgba(255,117,143,0.5));">
+                    <span>Letters Journal</span>
                 </button>
                 <button type="button" class="window-nav-btn" id="win-tab-streak">
-                    <span>Daily Streak 🔥</span>
-                    <span class="badge" id="streak-pill-count" style="background: rgba(255,77,109,0.3); border: 1px solid rgba(255,117,143,0.5); color: #fff; padding: 0.15rem 0.6rem; border-radius: 12px; font-size: 0.75rem;">🔥 0</span>
+                    <span>Daily Streak</span>
+                    <span class="badge" id="streak-pill-count" style="background: rgba(255,77,109,0.35); border: 1.5px solid rgba(255,117,143,0.6); color: #fff; padding: 0.28rem 0.75rem; border-radius: 16px; font-size: 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; box-shadow: 0 0 12px rgba(255,77,109,0.35);">🔥 0</span>
+                </button>
+                <button type="button" class="window-nav-btn" id="win-tab-care">
+                    <span>Take Care 💗</span>
                 </button>
             </div>
 
@@ -758,6 +762,231 @@
                         <!-- Rendered dynamically -->
                     </div>
                 </div>
+            </div>
+
+            <!-- VIEW 3: TAKE CARE 💗 -->
+            <div id="care-window-view" style="display: none; flex: 1; flex-direction: column; overflow-y: auto; padding-right: 4px; gap: 1rem;">
+                
+                <!-- Time-Based Greeting Banner -->
+                <div class="glass-card care-banner" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(255,117,143,0.2) 100%); border: 1.5px solid rgba(255,117,143,0.4); border-radius: 16px;">
+                    <div id="care-time-greeting" style="font-family: var(--font-serif); font-size: 1.35rem; color: #e8c8ff; margin-bottom: 0.2rem; font-weight: 700;">Good morning, Anu 🌸</div>
+                    <div id="care-time-subtext" style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Let's start the day with some water and breakfast 💗</div>
+                </div>
+
+                <!-- VISHU'S MOOD CARD (WITH AUTHENTIC PFP & MOOD BADGE) -->
+                <div class="glass-card" id="vishu-mood-card" style="padding: 1rem 1.2rem; border-radius: 16px; background: linear-gradient(135deg, rgba(20,5,30,0.7) 0%, rgba(40,10,50,0.7) 100%); border: 1.5px solid rgba(255,117,143,0.4); display: flex; align-items: center; gap: 1rem; position: relative; transition: all 0.4s ease;">
+                    <!-- Vishu PFP Ring Container -->
+                    <div id="vishu-pfp-container" style="position: relative; width: 68px; height: 68px; flex-shrink: 0;">
+                        <img id="vishu-mood-pfp" src="assets/images/vishu_pfp.jpg" alt="Vishu Photo" style="width: 68px; height: 68px; border-radius: 50%; object-fit: cover; object-position: center 20%; border: 2.5px solid #ff758f; box-shadow: 0 0 16px rgba(255,117,143,0.5); transition: all 0.4s ease;">
+                        <!-- Floating Mood Badge at bottom right -->
+                        <div id="vishu-mood-badge" style="position: absolute; bottom: -2px; right: -2px; width: 26px; height: 26px; border-radius: 50%; background: rgba(15,5,24,0.9); border: 1.5px solid rgba(255,117,143,0.6); display: flex; align-items: center; justify-content: center; font-size: 0.92rem; box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">🥺</div>
+                    </div>
+
+                    <!-- Vishu Mood Message & Status -->
+                    <div style="flex: 1; min-width: 0; text-align: left;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.2rem; gap: 0.4rem; flex-wrap: wrap;">
+                            <span style="font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; color: #ff758f;">Vishu's Mood 💗</span>
+                            <span id="vishu-mood-label" style="font-size: 0.76rem; padding: 0.15rem 0.6rem; border-radius: 12px; background: rgba(255,117,143,0.2); border: 1px solid rgba(255,117,143,0.4); color: #e8c8ff; font-weight: 600;">Worried 🥺</span>
+                        </div>
+                        <p id="vishu-mood-quote" style="font-size: 0.88rem; color: rgba(255,255,255,0.95); line-height: 1.4; margin: 0; font-style: italic; transition: opacity 0.3s ease;">
+                            "Anu… you haven't taken care of yourself much today 🥺"
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 0.2rem;">
+                    <h3 class="modal-title" style="color: #ff758f; margin-bottom: 0.2rem; font-family: var(--font-serif); font-size: 1.4rem;">A Little Reminder From Vishu 💗</h3>
+                    <p style="font-size: 0.88rem; color: #e8c8ff; font-weight: 600; margin-bottom: 0.2rem;">Because my Anu needs to take care of herself too 🥺</p>
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">No pressure. No perfection. Just little reminders from someone who loves you.</p>
+                </div>
+
+                <!-- Today's Care Summary Card -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,117,143,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #ff758f; margin: 0;">Today's Care 💗</h4>
+                        <div style="font-size: 0.85rem; background: rgba(255,117,143,0.25); border: 1px solid rgba(255,117,143,0.5); padding: 0.2rem 0.75rem; border-radius: 14px; color: #fff; font-weight: 700;" id="care-love-points-badge">0 💗</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; text-align: center; margin-bottom: 1rem;">
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.6rem 0.4rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">💧 Water</div>
+                            <div style="font-size: 0.9rem; font-weight: 700; color: #70a1ff;" id="care-summary-water">0.0 / 4.0 L</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.6rem 0.4rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">🍽️ Meals</div>
+                            <div style="font-size: 0.9rem; font-weight: 700; color: #ff6b81;" id="care-summary-meals">0 / 3</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.6rem 0.4rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">⭐ Love Points</div>
+                            <div style="font-size: 0.9rem; font-weight: 700; color: #e8c8ff;" id="care-summary-points">0 💗</div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-bottom: 0.35rem;">
+                            <span>Daily Care Progress</span>
+                            <span id="care-progress-percent" style="font-weight: 700; color: #ff758f;">0% cared for today 💗</span>
+                        </div>
+                        <div style="height: 10px; background: rgba(0,0,0,0.4); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+                            <div id="care-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #70a1ff 0%, #ff758f 50%, #c084fc 100%); transition: width 0.5s ease; border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Water Tracker Card -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(112,161,255,0.35); position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                        <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #70a1ff; margin: 0;">Hydration Check, Anu 💧</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Target: 3–4 Litres</div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 0.8rem;">
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;" id="care-water-display">0.0 L / 4.0 L</div>
+                    </div>
+
+                    <!-- 8 Water Drop Glasses Grid -->
+                    <div id="care-water-drops" style="display: flex; justify-content: center; gap: 0.5rem; font-size: 1.5rem; margin-bottom: 0.8rem; flex-wrap: wrap;">
+                        <span>🤍</span><span>🤍</span><span>🤍</span><span>🤍</span>
+                        <span>🤍</span><span>🤍</span><span>🤍</span><span>🤍</span>
+                    </div>
+
+                    <!-- Dynamic Encouraging Message -->
+                    <div id="care-water-msg-box" style="background: rgba(112,161,255,0.15); border: 1px solid rgba(112,161,255,0.3); border-radius: 12px; padding: 0.6rem 0.9rem; text-align: center; font-size: 0.85rem; color: #e0ecff; margin-bottom: 1rem; line-height: 1.4;">
+                        Anu cutu, have some water for me? 🥺💧
+                    </div>
+
+                    <!-- Quick Add & Remove Water Buttons -->
+                    <div style="display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+                        <button type="button" class="btn care-water-add-btn" data-ml="250" style="padding: 0.4rem 0.75rem; font-size: 0.82rem; border-radius: 20px; background: rgba(112,161,255,0.25); border: 1px solid rgba(112,161,255,0.5); color: #fff;">+250 ml</button>
+                        <button type="button" class="btn care-water-add-btn" data-ml="500" style="padding: 0.4rem 0.75rem; font-size: 0.82rem; border-radius: 20px; background: rgba(112,161,255,0.25); border: 1px solid rgba(112,161,255,0.5); color: #fff;">+500 ml</button>
+                        <button type="button" class="btn care-water-add-btn" data-ml="750" style="padding: 0.4rem 0.75rem; font-size: 0.82rem; border-radius: 20px; background: rgba(112,161,255,0.25); border: 1px solid rgba(112,161,255,0.5); color: #fff;">+750 ml</button>
+                        <button type="button" class="btn care-water-add-btn" data-ml="1000" style="padding: 0.4rem 0.75rem; font-size: 0.82rem; border-radius: 20px; background: rgba(112,161,255,0.25); border: 1px solid rgba(112,161,255,0.5); color: #fff;">+1 L</button>
+                    </div>
+
+                    <!-- Remove / Custom Controls -->
+                    <div style="display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
+                        <button type="button" class="btn care-water-sub-btn" data-ml="250" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 20px; background: rgba(255,77,109,0.18); border: 1px solid rgba(255,117,143,0.4); color: #ff758f;">-250 ml</button>
+                        <button type="button" class="btn care-water-sub-btn" data-ml="500" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 20px; background: rgba(255,77,109,0.18); border: 1px solid rgba(255,117,143,0.4); color: #ff758f;">-500 ml</button>
+                        <button type="button" class="btn" id="care-water-custom-btn" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff;">Custom</button>
+                        <button type="button" class="btn" id="care-water-reset-btn" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: var(--text-muted);">Reset 🔄</button>
+                    </div>
+
+                    <!-- Custom ML Input Box (Hidden by default) -->
+                    <div id="care-custom-input-box" style="display: none; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.6rem;">
+                        <input type="number" id="care-custom-ml-input" placeholder="ml (e.g. 350)" style="width: 120px; padding: 0.4rem 0.75rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4); color: #fff; outline: none; font-size: 0.85rem;">
+                        <button type="button" class="btn btn-primary" id="care-custom-ml-submit" style="padding: 0.4rem 0.9rem; font-size: 0.82rem; border-radius: 20px;">Add</button>
+                    </div>
+                </div>
+
+                <!-- Meal Tracker Card -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,117,143,0.35);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #ff758f; margin: 0;">Did My Anu Eat? 🍽️💗</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);" id="care-meals-counter-label">0/3 Meals</div>
+                    </div>
+
+                    <!-- 3 Meals Toggle Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.8rem;">
+                        <button type="button" class="care-meal-btn" id="care-meal-breakfast" data-meal="breakfast" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
+                            <span style="font-size: 0.92rem; font-weight: 600;">🌅 Breakfast</span>
+                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
+                        </button>
+                        <button type="button" class="care-meal-btn" id="care-meal-lunch" data-meal="lunch" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
+                            <span style="font-size: 0.92rem; font-weight: 600;">☀️ Lunch</span>
+                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
+                        </button>
+                        <button type="button" class="care-meal-btn" id="care-meal-dinner" data-meal="dinner" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
+                            <span style="font-size: 0.92rem; font-weight: 600;">🌙 Dinner</span>
+                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Meal Encouraging Message Box -->
+                    <div id="care-meal-msg-box" style="background: rgba(255,117,143,0.15); border: 1px solid rgba(255,117,143,0.3); border-radius: 12px; padding: 0.6rem 0.9rem; text-align: center; font-size: 0.85rem; color: #ffe0eb; margin-bottom: 0.8rem; line-height: 1.4;">
+                        Don't forget to fuel your day, shona 💗
+                    </div>
+
+                    <!-- Optional Extra Food Button -->
+                    <div style="text-align: center;">
+                        <button type="button" id="care-extra-food-btn" style="padding: 0.5rem 1.2rem; font-size: 0.84rem; border-radius: 20px; background: rgba(168,85,247,0.2); border: 1px solid rgba(168,85,247,0.4); color: #e8c8ff; cursor: pointer; transition: all 0.3s ease;">
+                            🍓 I ate something extra +5 💗
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Love Points & Little Rewards 💕 Card -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(168,85,247,0.35);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #c084fc; margin: 0;">Anu Care Points 💗</h4>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #e8c8ff;" id="care-rewards-total">0 💗 Total</div>
+                    </div>
+
+                    <!-- Milestones List -->
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div class="care-reward-item" id="reward-100" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
+                            <span>100 💗 — Vishu owes Anu a virtual hug 🤗</span>
+                            <span class="reward-status" style="color: var(--text-muted);">🔒</span>
+                        </div>
+                        <div class="care-reward-item" id="reward-250" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
+                            <span>250 💗 — Certified Cutu Care Champion 🏆💗</span>
+                            <span class="reward-status" style="color: var(--text-muted);">🔒</span>
+                        </div>
+                        <div class="care-reward-item" id="reward-500" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
+                            <span>500 💗 — Extra Love From Vishu unlocked 🥺💕</span>
+                            <span class="reward-status" style="color: var(--text-muted);">🔒</span>
+                        </div>
+                        <div class="care-reward-item" id="reward-1000" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
+                            <span>1000 💗 — Legendary Anu Care Level 👑💗</span>
+                            <span class="reward-status" style="color: var(--text-muted);">🔒</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Care Streak 🌸 & Weekly Summary Card -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,117,143,0.35);">
+                    <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #ff758f; margin-bottom: 0.4rem;">Anu's Care Streak 🌸</h4>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem;" id="care-streak-days">0 Days</div>
+                    <p style="font-size: 0.82rem; color: rgba(255,255,255,0.85); margin-bottom: 0.8rem;" id="care-streak-desc">Let me see my cutu take care of herself every day 💗</p>
+
+                    <h5 style="font-size: 0.95rem; color: #c084fc; margin-bottom: 0.5rem; font-family: var(--font-serif);">Anu's Week 💗</h5>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; font-size: 0.8rem;">
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.5rem 0.3rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">Avg Water</div>
+                            <div style="font-weight: 700; color: #70a1ff;" id="care-week-water">0.0 L/d</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.5rem 0.3rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">Meals</div>
+                            <div style="font-weight: 700; color: #ff6b81;" id="care-week-meals">0 / 21</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.5rem 0.3rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">Care Points</div>
+                            <div style="font-weight: 700; color: #e8c8ff;" id="care-week-points">0 💗</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.5rem 0.3rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">Care Streak</div>
+                            <div style="font-weight: 700; color: #ff758f;" id="care-week-streak">0d</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anu's Care History 📅 -->
+                <div class="glass-card" style="padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: var(--secondary-light); margin-bottom: 0.8rem;">Anu's Care History 📅</h4>
+                    <div id="care-history-feed" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Vishu's Little Reminder 💌 (Glowing Card) -->
+                <div class="glass-card" style="padding: 1.3rem; text-align: center; background: linear-gradient(135deg, rgba(255,117,143,0.25) 0%, rgba(168,85,247,0.25) 100%); border: 1.5px solid rgba(255,117,143,0.5); border-radius: 16px; box-shadow: 0 0 20px rgba(255,117,143,0.3);">
+                    <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: #ff758f; margin-bottom: 0.5rem;">Vishu's Little Reminder 💌</h4>
+                    <p id="care-vishu-quote" style="font-size: 0.92rem; color: rgba(255,255,255,0.95); line-height: 1.6; font-style: italic; margin: 0;">
+                        "Please don't forget to eat, meri Anu. I need my cutu healthy and happy 🥺💗"
+                    </p>
+                </div>
+
             </div>
         </div>
     </div>

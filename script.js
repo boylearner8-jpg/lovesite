@@ -1967,9 +1967,763 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCountVishu = document.getElementById('modal-count-vishu');
     const modalWriteLetterBtn = document.getElementById('modal-write-letter-btn');
 
+    // ==========================================
+    // ANU'S TAKE CARE 💗 BACKEND MANAGER
+    // ==========================================
+    class CareTrackerManager {
+        static STORAGE_KEY = 'lovesite_care_tracker_v1';
+
+        static getClient() {
+            return window.supabaseClient || null;
+        }
+
+        static getTodayDateStr() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        static getFormattedDateStr(dateStr) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return dateStr;
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            return `${months[monthIdx]} ${parseInt(parts[2], 10)}`;
+        }
+
+        static async loadData() {
+            let data = this.getLocalData();
+
+            const client = this.getClient();
+            if (client) {
+                try {
+                    const { data: dbRows, error } = await client
+                        .from('anu_care_tracker')
+                        .select('*')
+                        .order('date_str', { ascending: false });
+
+                    if (!error && dbRows && dbRows.length > 0) {
+                        dbRows.forEach(row => {
+                            data.records[row.date_str] = {
+                                date: row.date_str,
+                                water: Number(row.water) || 0.0,
+                                waterEntries: row.water_entries || [],
+                                breakfast: Boolean(row.breakfast),
+                                lunch: Boolean(row.lunch),
+                                dinner: Boolean(row.dinner),
+                                extraFood: Boolean(row.extra_food),
+                                points: Number(row.points) || 0,
+                                waterBonusAwarded: Boolean(row.water_bonus_awarded),
+                                mealsBonusAwarded: Boolean(row.meals_bonus_awarded)
+                            };
+                        });
+                        let totPts = 0;
+                        Object.values(data.records).forEach(r => totPts += (r.points || 0));
+                        data.totalPoints = totPts;
+                    }
+                } catch (e) {
+                    console.error("Error fetching CareTracker data from Supabase:", e);
+                }
+            }
+
+            const today = this.getTodayDateStr();
+            if (!data.records[today]) {
+                data.records[today] = {
+                    date: today,
+                    water: 0.0,
+                    waterEntries: [],
+                    breakfast: false,
+                    lunch: false,
+                    dinner: false,
+                    extraFood: false,
+                    points: 0,
+                    waterBonusAwarded: false,
+                    mealsBonusAwarded: false
+                };
+            }
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+            return data;
+        }
+
+        static getLocalData() {
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            let data = null;
+            if (stored) {
+                try { data = JSON.parse(stored); } catch (e) {}
+            }
+            if (!data) {
+                data = {
+                    records: {},
+                    totalPoints: 0,
+                    unlockedRewards: [],
+                    careStreak: 0,
+                    lastCheckInDate: null
+                };
+            }
+            const today = this.getTodayDateStr();
+            if (!data.records[today]) {
+                data.records[today] = {
+                    date: today,
+                    water: 0.0,
+                    waterEntries: [],
+                    breakfast: false,
+                    lunch: false,
+                    dinner: false,
+                    extraFood: false,
+                    points: 0,
+                    waterBonusAwarded: false,
+                    mealsBonusAwarded: false
+                };
+            }
+            return data;
+        }
+
+        static saveLocalData(data) {
+            try {
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        static async syncTodayRecordToSupabase(rec) {
+            const client = this.getClient();
+            if (!client) return;
+            try {
+                const { error } = await client
+                    .from('anu_care_tracker')
+                    .upsert([{
+                        date_str: rec.date,
+                        water: rec.water,
+                        water_entries: rec.waterEntries,
+                        breakfast: rec.breakfast,
+                        lunch: rec.lunch,
+                        dinner: rec.dinner,
+                        extra_food: rec.extraFood,
+                        points: rec.points,
+                        water_bonus_awarded: rec.waterBonusAwarded,
+                        meals_bonus_awarded: rec.mealsBonusAwarded,
+                        updated_at: Date.now()
+                    }], { onConflict: 'date_str' });
+
+                if (error) {
+                    console.error("Supabase CareTracker upsert error:", error);
+                }
+            } catch (e) {
+                console.error("Error syncing CareTracker record to Supabase:", e);
+            }
+        }
+
+        static recalculateStreak(data) {
+            const sortedDates = Object.keys(data.records).sort().reverse();
+            if (sortedDates.length === 0) {
+                data.careStreak = 0;
+                return;
+            }
+
+            let streak = 0;
+            const today = this.getTodayDateStr();
+
+            for (let i = 0; i < sortedDates.length; i++) {
+                const dateKey = sortedDates[i];
+                const rec = data.records[dateKey];
+                const mealsCount = (rec.breakfast ? 1 : 0) + (rec.lunch ? 1 : 0) + (rec.dinner ? 1 : 0);
+                const isCareDay = rec.water >= 3.0 || mealsCount >= 2;
+
+                if (isCareDay) {
+                    streak++;
+                } else {
+                    if (dateKey !== today) {
+                        break;
+                    }
+                }
+            }
+            data.careStreak = streak;
+        }
+
+        static async addWater(amountMl) {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            const litresToAdd = amountMl / 1000;
+            rec.water = parseFloat((rec.water + litresToAdd).toFixed(2));
+            rec.waterEntries.push({
+                amount: amountMl,
+                timestamp: Date.now()
+            });
+
+            let pointsEarned = 5;
+
+            if (rec.water >= 4.0 && !rec.waterBonusAwarded) {
+                rec.waterBonusAwarded = true;
+                pointsEarned += 10;
+            }
+
+            rec.points += pointsEarned;
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = totPts;
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, pointsEarned, currentWater: rec.water };
+        }
+
+        static async removeWater(amountMl) {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            const litresToSub = amountMl / 1000;
+            rec.water = Math.max(0, parseFloat((rec.water - litresToSub).toFixed(2)));
+
+            if (rec.water < 4.0 && rec.waterBonusAwarded) {
+                rec.waterBonusAwarded = false;
+                rec.points = Math.max(0, rec.points - 10);
+            }
+
+            rec.points = Math.max(0, rec.points - 5);
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = Math.max(0, totPts);
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, currentWater: rec.water };
+        }
+
+        static async resetWater() {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            rec.water = 0.0;
+            rec.waterEntries = [];
+            if (rec.waterBonusAwarded) {
+                rec.waterBonusAwarded = false;
+                rec.points = Math.max(0, rec.points - 10);
+            }
+
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = Math.max(0, totPts);
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, currentWater: 0.0 };
+        }
+
+        static async toggleMeal(mealName) {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            if (!['breakfast', 'lunch', 'dinner'].includes(mealName)) return { data, pointsEarned: 0 };
+
+            let pointsEarned = 0;
+            const wasCompleted = rec[mealName];
+            rec[mealName] = !wasCompleted;
+
+            if (!wasCompleted) {
+                pointsEarned = 10;
+                const mealsNow = (rec.breakfast ? 1 : 0) + (rec.lunch ? 1 : 0) + (rec.dinner ? 1 : 0);
+                if (mealsNow === 3 && !rec.mealsBonusAwarded) {
+                    rec.mealsBonusAwarded = true;
+                    pointsEarned += 10;
+                }
+
+                rec.points += pointsEarned;
+                let totPts = 0;
+                Object.values(data.records).forEach(r => totPts += (r.points || 0));
+                data.totalPoints = totPts;
+            }
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, pointsEarned, isCompleted: rec[mealName] };
+        }
+
+        static async addExtraFood() {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            if (rec.extraFood) return { data, pointsEarned: 0, alreadyClaimed: true };
+
+            rec.extraFood = true;
+            const pointsEarned = 5;
+            rec.points += pointsEarned;
+
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = totPts;
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, pointsEarned, alreadyClaimed: false };
+        }
+    }
+
+    const VISHU_CARE_QUOTES = [
+        "Please don't forget to eat, meri Anu. I need my cutu healthy and happy 🥺💗",
+        "Drink some water for me, shona? 🥹💧",
+        "Go eat something, Anu. Then come back and tell Vishu you did 😭💗",
+        "Your body takes care of you every day. Take care of it too 🌷",
+        "Taking care of my Anu is one of my favorite things 🥹💗",
+        "Vishu loves you. Now go drink some water 😭💧❤️"
+    ];
+
+    async function renderCareView() {
+        const data = await CareTrackerManager.loadData();
+        const todayStr = CareTrackerManager.getTodayDateStr();
+        const today = data.records[todayStr];
+
+        const mealsCount = (today.breakfast ? 1 : 0) + (today.lunch ? 1 : 0) + (today.dinner ? 1 : 0);
+        const waterRatio = Math.min(today.water / 4.0, 1.0);
+        const overallProgress = Math.round(((waterRatio * 0.5) + ((mealsCount / 3) * 0.5)) * 100);
+
+        // 0. Vishu Mood Card & Reactions (Using Authentic Uploaded Photo)
+        const moodPfp = document.getElementById('vishu-mood-pfp');
+        const moodBadge = document.getElementById('vishu-mood-badge');
+        const moodLabel = document.getElementById('vishu-mood-label');
+        const moodQuote = document.getElementById('vishu-mood-quote');
+
+        const isFullyComplete = (today.breakfast && today.lunch && today.dinner && today.water >= 4.0);
+        
+        let moodTier = 'low';
+        if (isFullyComplete || overallProgress >= 100) {
+            moodTier = 'complete';
+        } else if (overallProgress >= 81) {
+            moodTier = 'proud';
+        } else if (overallProgress >= 61) {
+            moodTier = 'happy';
+        } else if (overallProgress >= 41) {
+            moodTier = 'encouraging';
+        } else if (overallProgress >= 21) {
+            moodTier = 'concerned';
+        } else {
+            moodTier = 'low';
+        }
+
+        let displayQuote = "";
+        let displayBadge = "🥺";
+        let displayLabel = "Worried 🥺";
+
+        if (window._vishuActionReaction) {
+            displayQuote = window._vishuActionReaction.quote;
+            displayBadge = window._vishuActionReaction.badge;
+            displayLabel = window._vishuActionReaction.label;
+        } else {
+            if (moodTier === 'complete') {
+                displayBadge = "😭❤️";
+                displayLabel = "So Proud! 😭❤️";
+                displayQuote = "MY ANU DID ITTT 😭💗 Vishu is SO proud of you. You took care of yourself today 🥹❤️";
+            } else if (moodTier === 'proud') {
+                displayBadge = "🥰";
+                displayLabel = "Proud 🥰";
+                const quotes = [
+                    "I'm really proud of you, Anu 💗",
+                    "Almost there, cutu! You've done so well today 🥹💕",
+                    "That's my girl. Keep going 💗"
+                ];
+                displayQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            } else if (moodTier === 'happy') {
+                displayBadge = "😊";
+                displayLabel = "Happy 😊";
+                const quotes = [
+                    "There she is! My Anu is taking care of herself 🥹💗",
+                    "Look at you, shona! You're doing really good 💕",
+                    "Vishu is getting happier now 🥰"
+                ];
+                displayQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            } else if (moodTier === 'encouraging') {
+                displayBadge = "🙂";
+                displayLabel = "Encouraged 🙂";
+                const quotes = [
+                    "That's better, Anu 💗 Keep going.",
+                    "See? You're taking care of yourself already 🥹",
+                    "Vishu is happy to see this progress 💕"
+                ];
+                displayQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            } else if (moodTier === 'concerned') {
+                displayBadge = "😟";
+                displayLabel = "Concerned 😟";
+                const quotes = [
+                    "Come on, Anu. Let's take a little better care of you today 💗",
+                    "You've started… now let me see my cutu keep going, shona 🥺"
+                ];
+                displayQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            } else {
+                displayBadge = "🥺";
+                displayLabel = "Worried 🥺";
+                const quotes = [
+                    "Anu… you haven't taken care of yourself much today 🥺",
+                    "Cutu, please don't forget yourself too 💗",
+                    "Vishu is a little worried about my Anu 🥺"
+                ];
+                displayQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            }
+        }
+
+        if (moodBadge) {
+            moodBadge.textContent = displayBadge;
+            moodBadge.style.transform = 'scale(1.25)';
+            setTimeout(() => { if (moodBadge) moodBadge.style.transform = 'scale(1)'; }, 300);
+        }
+        if (moodLabel) moodLabel.textContent = displayLabel;
+        if (moodQuote) moodQuote.textContent = `"${displayQuote}"`;
+
+        // Update PFP Styling (DO NOT ALTER PHOTO, only glow, border, and filters)
+        if (moodPfp) {
+            if (moodTier === 'complete') {
+                moodPfp.style.filter = 'brightness(1.05) contrast(1.05)';
+                moodPfp.style.border = '3px solid #ff758f';
+                moodPfp.style.boxShadow = '0 0 26px rgba(255, 117, 143, 0.95), 0 0 45px rgba(168, 85, 247, 0.6)';
+            } else if (moodTier === 'proud') {
+                moodPfp.style.filter = 'brightness(1.02)';
+                moodPfp.style.border = '2.5px solid #ff758f';
+                moodPfp.style.boxShadow = '0 0 22px rgba(255, 117, 143, 0.85)';
+            } else if (moodTier === 'happy') {
+                moodPfp.style.filter = 'brightness(1.0)';
+                moodPfp.style.border = '2.5px solid #ff758f';
+                moodPfp.style.boxShadow = '0 0 18px rgba(255, 117, 143, 0.7)';
+            } else if (moodTier === 'encouraging') {
+                moodPfp.style.filter = 'brightness(1.0)';
+                moodPfp.style.border = '2px solid rgba(255, 117, 143, 0.7)';
+                moodPfp.style.boxShadow = '0 0 15px rgba(255, 117, 143, 0.5)';
+            } else if (moodTier === 'concerned') {
+                moodPfp.style.filter = 'brightness(0.95)';
+                moodPfp.style.border = '2px solid rgba(255, 117, 143, 0.5)';
+                moodPfp.style.boxShadow = '0 0 12px rgba(255, 117, 143, 0.35)';
+            } else {
+                moodPfp.style.filter = 'brightness(0.85) contrast(0.95)';
+                moodPfp.style.border = '2px solid rgba(168, 85, 247, 0.4)';
+                moodPfp.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.3)';
+            }
+        }
+
+        // 1. Time-Based Greeting
+        const now = new Date();
+        const hour = now.getHours();
+        const greetingTitle = document.getElementById('care-time-greeting');
+        const greetingSubtext = document.getElementById('care-time-subtext');
+
+        if (greetingTitle && greetingSubtext) {
+            if (hour >= 5 && hour < 12) {
+                greetingTitle.textContent = "Good morning, Anu 🌸";
+                greetingSubtext.textContent = "Let's start the day with some water and breakfast 💗";
+            } else if (hour >= 12 && hour < 17) {
+                greetingTitle.textContent = "How's my cutu doing? ☀️";
+                greetingSubtext.textContent = "Have you had lunch and some water yet? 💧";
+            } else if (hour >= 17 && hour < 21) {
+                greetingTitle.textContent = "Evening check-in, Anu 🌙";
+                greetingSubtext.textContent = "Dinner time soon, shona 🍽️💗";
+            } else {
+                greetingTitle.textContent = "Before you sleep… 🌙";
+                greetingSubtext.textContent = "Did you eat dinner and drink some water today?";
+            }
+        }
+
+        // 2. Summary Card
+        const summaryWater = document.getElementById('care-summary-water');
+        const summaryMeals = document.getElementById('care-summary-meals');
+        const summaryPoints = document.getElementById('care-summary-points');
+        const lovePointsBadge = document.getElementById('care-love-points-badge');
+        const progressPercent = document.getElementById('care-progress-percent');
+        const progressFill = document.getElementById('care-progress-fill');
+
+        if (summaryWater) summaryWater.textContent = `${today.water.toFixed(1)} / 4.0 L`;
+        if (summaryMeals) summaryMeals.textContent = `${mealsCount} / 3`;
+        if (summaryPoints) summaryPoints.textContent = `${today.points} 💗`;
+        if (lovePointsBadge) lovePointsBadge.textContent = `${data.totalPoints} 💗`;
+        if (progressPercent) progressPercent.textContent = `${overallProgress}% cared for today 💗`;
+        if (progressFill) progressFill.style.width = `${overallProgress}%`;
+
+        // 3. Water Tracker
+        const waterDisplay = document.getElementById('care-water-display');
+        const waterDropsGrid = document.getElementById('care-water-drops');
+        const waterMsgBox = document.getElementById('care-water-msg-box');
+
+        if (waterDisplay) waterDisplay.textContent = `${today.water.toFixed(1)} L / 4.0 L`;
+
+        if (waterDropsGrid) {
+            const filledCount = Math.min(Math.floor(today.water / 0.5), 8);
+            let dropsHTML = '';
+            for (let i = 0; i < 8; i++) {
+                if (i < filledCount) {
+                    dropsHTML += `<span style="transform: scale(1.1); transition: transform 0.3s ease; filter: drop-shadow(0 0 5px #70a1ff);">💧</span>`;
+                } else {
+                    dropsHTML += `<span style="opacity: 0.4;">🤍</span>`;
+                }
+            }
+            waterDropsGrid.innerHTML = dropsHTML;
+        }
+
+        if (waterMsgBox) {
+            let msg = "Anu cutu, have some water for me? 🥺💧";
+            if (today.water >= 4.0) {
+                if (today.water > 4.2) {
+                    msg = "You've reached today's target 💗 No need to force more — listen to your body.";
+                } else {
+                    msg = "Goal reached! 🥹💧 My Anu took care of herself today.";
+                }
+            } else if (today.water >= 3.0) {
+                msg = "Almost there, cutu 💧✨ Vishu is proud of you.";
+            } else if (today.water >= 2.0) {
+                msg = "Look at you! You're doing good, Anu 🥹💗";
+            } else if (today.water >= 1.0) {
+                msg = "That's better, shona 💗 Keep taking care of yourself.";
+            }
+            waterMsgBox.textContent = msg;
+        }
+
+        // 4. Meal Tracker
+        const mealBreakfastBtn = document.getElementById('care-meal-breakfast');
+        const mealLunchBtn = document.getElementById('care-meal-lunch');
+        const mealDinnerBtn = document.getElementById('care-meal-dinner');
+        const mealsCounterLabel = document.getElementById('care-meals-counter-label');
+        const mealMsgBox = document.getElementById('care-meal-msg-box');
+
+        if (mealsCounterLabel) mealsCounterLabel.textContent = `${mealsCount}/3 Meals`;
+
+        const updateMealBtn = (btn, isCompleted) => {
+            if (!btn) return;
+            const statusSpan = btn.querySelector('.care-meal-status');
+            if (isCompleted) {
+                btn.style.background = 'rgba(255,117,143,0.25)';
+                btn.style.borderColor = 'rgba(255,117,143,0.6)';
+                if (statusSpan) {
+                    statusSpan.textContent = '✓';
+                    statusSpan.style.color = '#ff758f';
+                    statusSpan.style.fontWeight = '800';
+                }
+            } else {
+                btn.style.background = 'rgba(0,0,0,0.25)';
+                btn.style.borderColor = 'rgba(255,255,255,0.12)';
+                if (statusSpan) {
+                    statusSpan.textContent = '○';
+                    statusSpan.style.color = 'var(--text-muted)';
+                    statusSpan.style.fontWeight = 'normal';
+                }
+            }
+        };
+
+        updateMealBtn(mealBreakfastBtn, today.breakfast);
+        updateMealBtn(mealLunchBtn, today.lunch);
+        updateMealBtn(mealDinnerBtn, today.dinner);
+
+        if (mealMsgBox) {
+            if (mealsCount === 3) {
+                mealMsgBox.textContent = "My Anu ate properly today 🥹🍽️ Vishu is proud of you.";
+                mealMsgBox.style.background = 'rgba(255,117,143,0.25)';
+            } else if (mealsCount > 0) {
+                mealMsgBox.textContent = "YAYYY Anu ate 🥹💗 Keep going shona!";
+                mealMsgBox.style.background = 'rgba(255,117,143,0.15)';
+            } else {
+                mealMsgBox.textContent = "Don't forget to fuel your day, shona 💗";
+                mealMsgBox.style.background = 'rgba(255,117,143,0.15)';
+            }
+        }
+
+        // Extra food button state
+        const extraFoodBtn = document.getElementById('care-extra-food-btn');
+        if (extraFoodBtn) {
+            if (today.extraFood) {
+                extraFoodBtn.textContent = '🍓 Extra food logged +5 💗 ✓';
+                extraFoodBtn.style.background = 'rgba(168,85,247,0.4)';
+                extraFoodBtn.style.borderColor = 'rgba(168,85,247,0.7)';
+            } else {
+                extraFoodBtn.textContent = '🍓 I ate something extra +5 💗';
+                extraFoodBtn.style.background = 'rgba(168,85,247,0.2)';
+                extraFoodBtn.style.borderColor = 'rgba(168,85,247,0.4)';
+            }
+        }
+
+        // 5. Milestones Rewards
+        const rewardsTotal = document.getElementById('care-rewards-total');
+        if (rewardsTotal) rewardsTotal.textContent = `${data.totalPoints} 💗 Total`;
+
+        const updateReward = (id, targetPoints) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const statusSpan = el.querySelector('.reward-status');
+            if (data.totalPoints >= targetPoints) {
+                el.style.background = 'rgba(168,85,247,0.3)';
+                el.style.borderColor = 'rgba(168,85,247,0.6)';
+                if (statusSpan) {
+                    statusSpan.textContent = '✨ Unlocked!';
+                    statusSpan.style.color = '#e8c8ff';
+                    statusSpan.style.fontWeight = '700';
+                }
+            } else {
+                el.style.background = 'rgba(0,0,0,0.25)';
+                el.style.borderColor = 'rgba(255,255,255,0.08)';
+                if (statusSpan) {
+                    statusSpan.textContent = '🔒';
+                    statusSpan.style.color = 'var(--text-muted)';
+                }
+            }
+        };
+
+        updateReward('reward-100', 100);
+        updateReward('reward-250', 250);
+        updateReward('reward-500', 500);
+        updateReward('reward-1000', 1000);
+
+        // 6. Care Streak & Weekly Summary
+        const streakDaysEl = document.getElementById('care-streak-days');
+        const streakDescEl = document.getElementById('care-streak-desc');
+
+        if (streakDaysEl) streakDaysEl.textContent = `${data.careStreak} Days`;
+        if (streakDescEl) {
+            if (data.careStreak > 0) {
+                streakDescEl.textContent = `${data.careStreak} days of taking care of yourself, Anu 💗`;
+            } else {
+                streakDescEl.textContent = "Yesterday wasn't perfect, and that's okay 🌷 Let's take care of today.";
+            }
+        }
+
+        // Calculate Weekly Stats (last 7 days)
+        const dateKeys = Object.keys(data.records).sort().slice(-7);
+        let weekWaterSum = 0;
+        let weekMealsSum = 0;
+        let weekPointsSum = 0;
+
+        dateKeys.forEach(dk => {
+            const r = data.records[dk];
+            weekWaterSum += r.water || 0;
+            const m = (r.breakfast ? 1 : 0) + (r.lunch ? 1 : 0) + (r.dinner ? 1 : 0);
+            weekMealsSum += m;
+            weekPointsSum += r.points || 0;
+        });
+
+        const numDays = Math.max(dateKeys.length, 1);
+        const avgWater = (weekWaterSum / numDays).toFixed(1);
+
+        const weekWaterEl = document.getElementById('care-week-water');
+        const weekMealsEl = document.getElementById('care-week-meals');
+        const weekPointsEl = document.getElementById('care-week-points');
+        const weekStreakEl = document.getElementById('care-week-streak');
+
+        if (weekWaterEl) weekWaterEl.textContent = `${avgWater} L/d`;
+        if (weekMealsEl) weekMealsEl.textContent = `${weekMealsSum} / 21`;
+        if (weekPointsEl) weekPointsEl.textContent = `${weekPointsSum} 💗`;
+        if (weekStreakEl) weekStreakEl.textContent = `${data.careStreak}d`;
+
+        // 7. Care History Feed
+        const historyFeed = document.getElementById('care-history-feed');
+        if (historyFeed) {
+            const allDates = Object.keys(data.records).sort().reverse();
+            if (allDates.length === 0) {
+                historyFeed.innerHTML = `<div style="font-size: 0.82rem; color: var(--text-muted); text-align: center;">No history recorded yet 💕</div>`;
+            } else {
+                historyFeed.innerHTML = '';
+                allDates.slice(0, 10).forEach(dk => {
+                    const r = data.records[dk];
+                    const mCount = (r.breakfast ? 1 : 0) + (r.lunch ? 1 : 0) + (r.dinner ? 1 : 0);
+                    const formattedDate = CareTrackerManager.getFormattedDateStr(dk);
+
+                    const card = document.createElement('div');
+                    card.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.9rem; background: rgba(0,0,0,0.25); border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem;';
+                    card.innerHTML = `
+                        <span style="font-weight: 700; color: #ff758f;">${formattedDate}</span>
+                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.9); display: flex; gap: 0.8rem;">
+                            <span>💧 ${r.water.toFixed(1)}L</span>
+                            <span>🍽️ ${mCount}/3</span>
+                            <span>⭐ ${r.points}💗</span>
+                        </div>
+                    `;
+                    historyFeed.appendChild(card);
+                });
+            }
+        }
+
+        // 8. Rotating Vishu Quote
+        const quoteEl = document.getElementById('care-vishu-quote');
+        if (quoteEl) {
+            const randomQuote = VISHU_CARE_QUOTES[Math.floor(Math.random() * VISHU_CARE_QUOTES.length)];
+            quoteEl.textContent = `"${randomQuote}"`;
+        }
+    }
+
+    // Floating Points Animation
+    function showFloatingPoints(points, targetEl) {
+        if (points <= 0) return;
+        const floatEl = document.createElement('div');
+        floatEl.textContent = `+${points} 💗`;
+        floatEl.style.cssText = `
+            position: fixed;
+            z-index: 10000;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #ff758f;
+            text-shadow: 0 0 10px rgba(255,117,143,0.8);
+            pointer-events: none;
+            transition: all 1s ease-out;
+            opacity: 1;
+        `;
+
+        if (targetEl) {
+            const rect = targetEl.getBoundingClientRect();
+            floatEl.style.left = `${rect.left + rect.width / 2 - 20}px`;
+            floatEl.style.top = `${rect.top - 10}px`;
+        } else {
+            floatEl.style.left = '50%';
+            floatEl.style.top = '50%';
+        }
+
+        document.body.appendChild(floatEl);
+
+        requestAnimationFrame(() => {
+            floatEl.style.transform = 'translateY(-40px)';
+            floatEl.style.opacity = '0';
+        });
+
+        setTimeout(() => {
+            if (floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
+        }, 1000);
+    }
+
+    // Trigger Vishu PFP Bounce & Temporary Reaction Message
+    function triggerVishuPfpReaction(quote, badge, label) {
+        const moodPfp = document.getElementById('vishu-mood-pfp');
+        if (moodPfp) {
+            moodPfp.classList.remove('vishu-pfp-bounce');
+            void moodPfp.offsetWidth;
+            moodPfp.classList.add('vishu-pfp-bounce');
+        }
+
+        window._vishuActionReaction = { quote, badge, label };
+        
+        if (window._vishuReactionTimer) clearTimeout(window._vishuReactionTimer);
+        window._vishuReactionTimer = setTimeout(() => {
+            window._vishuActionReaction = null;
+            renderCareView();
+        }, 3500);
+    }
+
     const openJournalFullModal = async () => {
         renderJournalList();
         renderStreakView();
+        renderCareView();
         if (journalFullModal) {
             journalFullModal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1983,26 +2737,159 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Window View Navigation Tabs (Letters vs Streak)
+    // Window View Navigation Tabs (Letters vs Streak vs Take Care)
     const winTabLetters = document.getElementById('win-tab-letters');
     const winTabStreak = document.getElementById('win-tab-streak');
+    const winTabCare = document.getElementById('win-tab-care');
     const lettersWindowView = document.getElementById('letters-window-view');
     const streakWindowView = document.getElementById('streak-window-view');
+    const careWindowView = document.getElementById('care-window-view');
 
     if (winTabLetters && winTabStreak) {
         winTabLetters.addEventListener('click', () => {
             winTabLetters.classList.add('active');
             winTabStreak.classList.remove('active');
+            if (winTabCare) winTabCare.classList.remove('active');
             if (lettersWindowView) lettersWindowView.style.display = 'flex';
             if (streakWindowView) streakWindowView.style.display = 'none';
+            if (careWindowView) careWindowView.style.display = 'none';
         });
 
         winTabStreak.addEventListener('click', async () => {
             winTabStreak.classList.add('active');
             winTabLetters.classList.remove('active');
+            if (winTabCare) winTabCare.classList.remove('active');
             if (lettersWindowView) lettersWindowView.style.display = 'none';
             if (streakWindowView) streakWindowView.style.display = 'flex';
+            if (careWindowView) careWindowView.style.display = 'none';
             await renderStreakView();
+        });
+
+        if (winTabCare) {
+            winTabCare.addEventListener('click', async () => {
+                winTabCare.classList.add('active');
+                winTabLetters.classList.remove('active');
+                winTabStreak.classList.remove('active');
+                if (lettersWindowView) lettersWindowView.style.display = 'none';
+                if (streakWindowView) streakWindowView.style.display = 'none';
+                if (careWindowView) careWindowView.style.display = 'flex';
+                await renderCareView();
+            });
+        }
+    }
+
+    // Quick Add Water Buttons
+    document.querySelectorAll('.care-water-add-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const ml = parseInt(btn.getAttribute('data-ml'), 10);
+            if (ml) {
+                const res = await CareTrackerManager.addWater(ml);
+                showFloatingPoints(res.pointsEarned, e.target);
+                if (res.currentWater >= 4.0) {
+                    triggerVishuPfpReaction("4L! Hydration goal reached 💧😭💗", "😭❤️", "Hydrated! 💧");
+                } else {
+                    triggerVishuPfpReaction("Good girl, my Anu 💧💗", "💧", "Hydrated 💧");
+                }
+                await renderCareView();
+            }
+        });
+    });
+
+    // Quick Remove Water Buttons
+    document.querySelectorAll('.care-water-sub-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const ml = parseInt(btn.getAttribute('data-ml'), 10);
+            if (ml) {
+                await CareTrackerManager.removeWater(ml);
+                await renderCareView();
+            }
+        });
+    });
+
+    // Reset Water Button
+    const resetWaterBtn = document.getElementById('care-water-reset-btn');
+    if (resetWaterBtn) {
+        resetWaterBtn.addEventListener('click', async () => {
+            if (confirm("Reset today's water intake back to 0.0 L?")) {
+                await CareTrackerManager.resetWater();
+                await renderCareView();
+            }
+        });
+    }
+
+    // Custom Water Button & Submit
+    const customWaterBtn = document.getElementById('care-water-custom-btn');
+    const customWaterInputBox = document.getElementById('care-custom-input-box');
+    const customWaterSubmit = document.getElementById('care-custom-ml-submit');
+    const customWaterInput = document.getElementById('care-custom-ml-input');
+
+    if (customWaterBtn && customWaterInputBox) {
+        customWaterBtn.addEventListener('click', () => {
+            customWaterInputBox.style.display = customWaterInputBox.style.display === 'flex' ? 'none' : 'flex';
+            if (customWaterInputBox.style.display === 'flex' && customWaterInput) {
+                customWaterInput.focus();
+            }
+        });
+    }
+
+    if (customWaterSubmit && customWaterInput) {
+        customWaterSubmit.addEventListener('click', async (e) => {
+            const val = parseInt(customWaterInput.value, 10);
+            if (val && val > 0) {
+                const res = await CareTrackerManager.addWater(val);
+                showFloatingPoints(res.pointsEarned, e.target);
+                customWaterInput.value = '';
+                if (customWaterInputBox) customWaterInputBox.style.display = 'none';
+                if (res.currentWater >= 4.0) {
+                    triggerVishuPfpReaction("4L! Hydration goal reached 💧😭💗", "😭❤️", "Hydrated! 💧");
+                } else {
+                    triggerVishuPfpReaction("Good girl, my Anu 💧💗", "💧", "Hydrated 💧");
+                }
+                await renderCareView();
+            }
+        });
+    }
+
+    // Meal Toggle Buttons
+    document.querySelectorAll('.care-meal-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const mealName = btn.getAttribute('data-meal');
+            if (mealName) {
+                const res = await CareTrackerManager.toggleMeal(mealName);
+                if (res.pointsEarned > 0) {
+                    showFloatingPoints(res.pointsEarned, btn);
+                }
+                if (res.isCompleted) {
+                    const data = CareTrackerManager.getLocalData();
+                    const todayStr = CareTrackerManager.getTodayDateStr();
+                    const today = data.records[todayStr];
+                    const mealsCount = (today.breakfast ? 1 : 0) + (today.lunch ? 1 : 0) + (today.dinner ? 1 : 0);
+
+                    if (mealsCount === 3) {
+                        triggerVishuPfpReaction("3/3! SHE ATE 😭💗 Vishu is happy!", "😭❤️", "All Meals Done!");
+                    } else if (mealName === 'breakfast') {
+                        triggerVishuPfpReaction("YAYYY, Anu ate breakfast 🥹🍳💗", "🍳", "Breakfast Done!");
+                    } else if (mealName === 'lunch') {
+                        triggerVishuPfpReaction("Good job, shona 💗 Lunch is done!", "☀️", "Lunch Done!");
+                    } else if (mealName === 'dinner') {
+                        triggerVishuPfpReaction("My Anu ate dinner 🥹🌙❤️", "🌙", "Dinner Done!");
+                    }
+                }
+                await renderCareView();
+            }
+        });
+    });
+
+    // Extra Food Button
+    const extraFoodBtn = document.getElementById('care-extra-food-btn');
+    if (extraFoodBtn) {
+        extraFoodBtn.addEventListener('click', async (e) => {
+            const res = await CareTrackerManager.addExtraFood();
+            if (res.pointsEarned > 0) {
+                showFloatingPoints(res.pointsEarned, extraFoodBtn);
+                triggerVishuPfpReaction("YUMMM 🍓 Extra food logged! 💕", "🍓", "Extra Food!");
+            }
+            await renderCareView();
         });
     }
 

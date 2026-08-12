@@ -96,6 +96,27 @@ alter table letter_comments enable row level security;
 create policy "Allow public read access to letter_comments" on letter_comments for select using (true);
 create policy "Allow public insert access to letter_comments" on letter_comments for insert with check (true);
 create policy "Allow public delete access to letter_comments" on letter_comments for delete using (true);
+
+-- 6. Create Anu Care Tracker Table
+create table anu_care_tracker (
+  date_str text primary key,
+  water numeric default 0.0,
+  water_entries jsonb default '[]'::jsonb,
+  breakfast boolean default false,
+  lunch boolean default false,
+  dinner boolean default false,
+  extra_food boolean default false,
+  points numeric default 0,
+  water_bonus_awarded boolean default false,
+  meals_bonus_awarded boolean default false,
+  updated_at bigint not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table anu_care_tracker enable row level security;
+create policy "Allow public read access to anu_care_tracker" on anu_care_tracker for select using (true);
+create policy "Allow public insert access to anu_care_tracker" on anu_care_tracker for insert with check (true);
+create policy "Allow public update access to anu_care_tracker" on anu_care_tracker for update using (true);
 ```
 
 4. Click **Run** (bottom right). You should see `Success` or `Query returned no rows`.
