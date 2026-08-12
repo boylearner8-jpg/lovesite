@@ -2426,7 +2426,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayStr = CareTrackerManager.getTodayDateStr();
         const today = data.records[todayStr];
 
-        const mealsCount = (today.breakfast ? 1 : 0) + (today.lunch ? 1 : 0) + (today.dinner ? 1 : 0);
+        const b = CareTrackerManager.parseMealState(today.breakfast).completed;
+        const l = CareTrackerManager.parseMealState(today.lunch).completed;
+        const d = CareTrackerManager.parseMealState(today.dinner).completed;
+        const mealsCount = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
         const waterRatio = Math.min(today.water / 4.0, 1.0);
         const overallProgress = Math.round(((waterRatio * 0.5) + ((mealsCount / 3) * 0.5)) * 100);
 
@@ -2436,7 +2439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const moodLabel = document.getElementById('vishu-mood-label');
         const moodQuote = document.getElementById('vishu-mood-quote');
 
-        const isFullyComplete = (today.breakfast && today.lunch && today.dinner && today.water >= 4.0);
+        const isFullyComplete = (b && l && d && today.water >= 4.0);
         
         let moodTier = 'low';
         if (isFullyComplete || overallProgress >= 100) {
