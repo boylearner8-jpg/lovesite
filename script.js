@@ -1972,6 +1972,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     class CareTrackerManager {
         static STORAGE_KEY = 'lovesite_care_tracker_v1';
+        static PROMISE_KEY = 'lovesite_care_promise_date_v1';
+
+        static isPromiseAcceptedForToday() {
+            const today = this.getTodayDateStr();
+            const stored = localStorage.getItem(this.PROMISE_KEY);
+            return stored === today;
+        }
+
+        static markPromiseAcceptedForToday() {
+            const today = this.getTodayDateStr();
+            try {
+                localStorage.setItem(this.PROMISE_KEY, today);
+            } catch (e) {}
+        }
 
         static getClient() {
             return window.supabaseClient || null;
@@ -1993,6 +2007,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${months[monthIdx]} ${parseInt(parts[2], 10)}`;
         }
 
+        static getFormattedTimeString(d = new Date()) {
+            let hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
+        static parseMealState(mealVal) {
+            if (typeof mealVal === 'object' && mealVal !== null) {
+                return {
+                    completed: Boolean(mealVal.completed),
+                    time: mealVal.time || null,
+                    timestamp: mealVal.timestamp || null
+                };
+            }
+            return {
+                completed: Boolean(mealVal),
+                time: null,
+                timestamp: null
+            };
+        }
+
         static async loadData() {
             let data = this.getLocalData();
 
@@ -2010,9 +2048,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 date: row.date_str,
                                 water: Number(row.water) || 0.0,
                                 waterEntries: row.water_entries || [],
-                                breakfast: Boolean(row.breakfast),
-                                lunch: Boolean(row.lunch),
-                                dinner: Boolean(row.dinner),
+                                breakfast: this.parseMealState(row.breakfast),
+                                lunch: this.parseMealState(row.lunch),
+                                dinner: this.parseMealState(row.dinner),
                                 extraFood: Boolean(row.extra_food),
                                 points: Number(row.points) || 0,
                                 waterBonusAwarded: Boolean(row.water_bonus_awarded),
@@ -2034,9 +2072,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: today,
                     water: 0.0,
                     waterEntries: [],
-                    breakfast: false,
-                    lunch: false,
-                    dinner: false,
+                    breakfast: { completed: false, time: null, timestamp: null },
+                    lunch: { completed: false, time: null, timestamp: null },
+                    dinner: { completed: false, time: null, timestamp: null },
                     extraFood: false,
                     points: 0,
                     waterBonusAwarded: false,
@@ -2070,14 +2108,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: today,
                     water: 0.0,
                     waterEntries: [],
-                    breakfast: false,
-                    lunch: false,
-                    dinner: false,
+                    breakfast: { completed: false, time: null, timestamp: null },
+                    lunch: { completed: false, time: null, timestamp: null },
+                    dinner: { completed: false, time: null, timestamp: null },
                     extraFood: false,
                     points: 0,
                     waterBonusAwarded: false,
                     mealsBonusAwarded: false
                 };
+            } else {
+                data.records[today].breakfast = this.parseMealState(data.records[today].breakfast);
+                data.records[today].lunch = this.parseMealState(data.records[today].lunch);
+                data.records[today].dinner = this.parseMealState(data.records[today].dinner);
             }
             return data;
         }
@@ -2098,9 +2140,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         date_str: rec.date,
                         water: rec.water,
                         water_entries: rec.waterEntries,
-                        breakfast: rec.breakfast,
-                        lunch: rec.lunch,
-                        dinner: rec.dinner,
+                        breakfast: this.parseMealState(rec.breakfast).completed,
+                        lunch: this.parseMealState(rec.lunch).completed,
+                        dinner: this.parseMealState(rec.dinner).completed,
                         extra_food: rec.extraFood,
                         points: rec.points,
                         water_bonus_awarded: rec.waterBonusAwarded,
@@ -2129,7 +2171,10 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < sortedDates.length; i++) {
                 const dateKey = sortedDates[i];
                 const rec = data.records[dateKey];
-                const mealsCount = (rec.breakfast ? 1 : 0) + (rec.lunch ? 1 : 0) + (rec.dinner ? 1 : 0);
+                const b = this.parseMealState(rec.breakfast).completed;
+                const l = this.parseMealState(rec.lunch).completed;
+                const d = this.parseMealState(rec.dinner).completed;
+                const mealsCount = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
                 const isCareDay = rec.water >= 3.0 || mealsCount >= 2;
 
                 if (isCareDay) {
@@ -2148,11 +2193,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const today = this.getTodayDateStr();
             const rec = data.records[today];
 
+            const now = new Date();
+            const timeStr = this.getFormattedTimeString(now);
+
             const litresToAdd = amountMl / 1000;
             rec.water = parseFloat((rec.water + litresToAdd).toFixed(2));
+
+            if (!Array.isArray(rec.waterEntries)) rec.waterEntries = [];
             rec.waterEntries.push({
                 amount: amountMl,
-                timestamp: Date.now()
+                time: timeStr,
+                timestamp: now.getTime()
             });
 
             let pointsEarned = 5;
@@ -2172,16 +2223,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await this.syncTodayRecordToSupabase(rec);
 
-            return { data, pointsEarned, currentWater: rec.water };
+            return { data, pointsEarned, currentWater: rec.water, timeStr };
         }
 
-        static async removeWater(amountMl) {
+        static async undoLastWaterEntry() {
             const data = this.getLocalData();
             const today = this.getTodayDateStr();
             const rec = data.records[today];
 
-            const litresToSub = amountMl / 1000;
-            rec.water = Math.max(0, parseFloat((rec.water - litresToSub).toFixed(2)));
+            if (!Array.isArray(rec.waterEntries) || rec.waterEntries.length === 0) {
+                return { data, undoneEntry: null };
+            }
+
+            const undoneEntry = rec.waterEntries.pop();
+            const litresToDeduct = (undoneEntry.amount || 0) / 1000;
+            rec.water = Math.max(0, parseFloat((rec.water - litresToDeduct).toFixed(2)));
 
             if (rec.water < 4.0 && rec.waterBonusAwarded) {
                 rec.waterBonusAwarded = false;
@@ -2189,6 +2245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             rec.points = Math.max(0, rec.points - 5);
+
             let totPts = 0;
             Object.values(data.records).forEach(r => totPts += (r.points || 0));
             data.totalPoints = Math.max(0, totPts);
@@ -2198,7 +2255,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await this.syncTodayRecordToSupabase(rec);
 
-            return { data, currentWater: rec.water };
+            return { data, undoneEntry };
+        }
+
+        static async removeWater(amountMl) {
+            return this.undoLastWaterEntry();
         }
 
         static async resetWater() {
@@ -2225,37 +2286,94 @@ document.addEventListener('DOMContentLoaded', () => {
             return { data, currentWater: 0.0 };
         }
 
-        static async toggleMeal(mealName) {
+        static async checkInMeal(mealName) {
             const data = this.getLocalData();
             const today = this.getTodayDateStr();
             const rec = data.records[today];
 
             if (!['breakfast', 'lunch', 'dinner'].includes(mealName)) return { data, pointsEarned: 0 };
 
-            let pointsEarned = 0;
-            const wasCompleted = rec[mealName];
-            rec[mealName] = !wasCompleted;
+            const currentMeal = this.parseMealState(rec[mealName]);
+            if (currentMeal.completed) return { data, pointsEarned: 0, alreadyDone: true };
 
-            if (!wasCompleted) {
-                pointsEarned = 10;
-                const mealsNow = (rec.breakfast ? 1 : 0) + (rec.lunch ? 1 : 0) + (rec.dinner ? 1 : 0);
-                if (mealsNow === 3 && !rec.mealsBonusAwarded) {
-                    rec.mealsBonusAwarded = true;
-                    pointsEarned += 10;
-                }
+            const now = new Date();
+            const timeStr = this.getFormattedTimeString(now);
 
-                rec.points += pointsEarned;
-                let totPts = 0;
-                Object.values(data.records).forEach(r => totPts += (r.points || 0));
-                data.totalPoints = totPts;
+            rec[mealName] = {
+                completed: true,
+                time: timeStr,
+                timestamp: now.getTime()
+            };
+
+            let pointsEarned = 10;
+            const b = this.parseMealState(rec.breakfast).completed;
+            const l = this.parseMealState(rec.lunch).completed;
+            const d = this.parseMealState(rec.dinner).completed;
+            const mealsNow = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
+
+            if (mealsNow === 3 && !rec.mealsBonusAwarded) {
+                rec.mealsBonusAwarded = true;
+                pointsEarned += 10;
             }
+
+            rec.points += pointsEarned;
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = totPts;
 
             this.recalculateStreak(data);
             this.saveLocalData(data);
 
             await this.syncTodayRecordToSupabase(rec);
 
-            return { data, pointsEarned, isCompleted: rec[mealName] };
+            return { data, pointsEarned, timeStr, isCompleted: true };
+        }
+
+        static async undoMeal(mealName) {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+
+            if (!['breakfast', 'lunch', 'dinner'].includes(mealName)) return { data };
+
+            const currentMeal = this.parseMealState(rec[mealName]);
+            if (!currentMeal.completed) return { data };
+
+            rec[mealName] = {
+                completed: false,
+                time: null,
+                timestamp: null
+            };
+
+            let pointsDeducted = 10;
+            if (rec.mealsBonusAwarded) {
+                rec.mealsBonusAwarded = false;
+                pointsDeducted += 10;
+            }
+
+            rec.points = Math.max(0, rec.points - pointsDeducted);
+            let totPts = 0;
+            Object.values(data.records).forEach(r => totPts += (r.points || 0));
+            data.totalPoints = Math.max(0, totPts);
+
+            this.recalculateStreak(data);
+            this.saveLocalData(data);
+
+            await this.syncTodayRecordToSupabase(rec);
+
+            return { data, isCompleted: false };
+        }
+
+        static async toggleMeal(mealName) {
+            const data = this.getLocalData();
+            const today = this.getTodayDateStr();
+            const rec = data.records[today];
+            const currentMeal = this.parseMealState(rec[mealName]);
+            if (currentMeal.completed) {
+                return this.undoMeal(mealName);
+            } else {
+                return this.checkInMeal(mealName);
+            }
         }
 
         static async addExtraFood() {
@@ -2292,6 +2410,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     async function renderCareView() {
+        const promiseOverlay = document.getElementById('vishu-promise-overlay');
+        const mainContent = document.getElementById('care-tracker-main-content');
+
+        if (!window._carePromiseAcceptedForSession) {
+            if (promiseOverlay) promiseOverlay.style.display = 'flex';
+            if (mainContent) mainContent.style.display = 'none';
+            return;
+        } else {
+            if (promiseOverlay) promiseOverlay.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'flex';
+        }
+
         const data = await CareTrackerManager.loadData();
         const todayStr = CareTrackerManager.getTodayDateStr();
         const today = data.records[todayStr];
@@ -2495,52 +2625,89 @@ document.addEventListener('DOMContentLoaded', () => {
             waterMsgBox.textContent = msg;
         }
 
-        // 4. Meal Tracker
-        const mealBreakfastBtn = document.getElementById('care-meal-breakfast');
-        const mealLunchBtn = document.getElementById('care-meal-lunch');
-        const mealDinnerBtn = document.getElementById('care-meal-dinner');
+        // 4. Meal Tracker UI Rendering
         const mealsCounterLabel = document.getElementById('care-meals-counter-label');
         const mealMsgBox = document.getElementById('care-meal-msg-box');
-
         if (mealsCounterLabel) mealsCounterLabel.textContent = `${mealsCount}/3 Meals`;
 
-        const updateMealBtn = (btn, isCompleted) => {
-            if (!btn) return;
-            const statusSpan = btn.querySelector('.care-meal-status');
-            if (isCompleted) {
-                btn.style.background = 'rgba(255,117,143,0.25)';
-                btn.style.borderColor = 'rgba(255,117,143,0.6)';
-                if (statusSpan) {
-                    statusSpan.textContent = '✓';
-                    statusSpan.style.color = '#ff758f';
-                    statusSpan.style.fontWeight = '800';
-                }
-            } else {
-                btn.style.background = 'rgba(0,0,0,0.25)';
-                btn.style.borderColor = 'rgba(255,255,255,0.12)';
-                if (statusSpan) {
-                    statusSpan.textContent = '○';
-                    statusSpan.style.color = 'var(--text-muted)';
-                    statusSpan.style.fontWeight = 'normal';
+        ['breakfast', 'lunch', 'dinner'].forEach(mealName => {
+            const mealState = CareTrackerManager.parseMealState(today[mealName]);
+            const cardEl = document.getElementById(`care-meal-card-${mealName}`);
+            const subtextEl = document.getElementById(`care-meal-subtext-${mealName}`);
+            const actionAreaEl = document.getElementById(`care-meal-action-${mealName}`);
+
+            if (cardEl && actionAreaEl) {
+                if (mealState.completed) {
+                    cardEl.style.background = 'rgba(255, 117, 143, 0.2)';
+                    cardEl.style.borderColor = 'rgba(255, 117, 143, 0.5)';
+                    if (subtextEl) {
+                        subtextEl.textContent = `Checked in at ${mealState.time || 'today'} ✓`;
+                        subtextEl.style.color = '#ff758f';
+                        subtextEl.style.fontWeight = '600';
+                    }
+                    actionAreaEl.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-weight: 800; color: #ff758f; font-size: 0.95rem;">✓</span>
+                            <button type="button" class="btn care-meal-undo-btn" data-meal="${mealName}" style="padding: 0.2rem 0.6rem; font-size: 0.72rem; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-muted); cursor: pointer;">Undo</button>
+                        </div>
+                    `;
+                } else {
+                    cardEl.style.background = 'rgba(0, 0, 0, 0.25)';
+                    cardEl.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    if (subtextEl) {
+                        if (mealName === 'breakfast') subtextEl.textContent = 'Did you eat breakfast, Anu?';
+                        else if (mealName === 'lunch') subtextEl.textContent = 'Did you eat lunch, shona?';
+                        else subtextEl.textContent = 'Did you eat dinner, cutu?';
+                        subtextEl.style.color = 'var(--text-muted)';
+                        subtextEl.style.fontWeight = '400';
+                    }
+                    actionAreaEl.innerHTML = `
+                        <button type="button" class="btn care-meal-checkin-btn" data-meal="${mealName}" style="padding: 0.35rem 0.8rem; font-size: 0.8rem; border-radius: 16px; background: rgba(255,117,143,0.25); border: 1px solid rgba(255,117,143,0.5); color: #fff; cursor: pointer;">Yes, I ate 💗</button>
+                    `;
                 }
             }
-        };
-
-        updateMealBtn(mealBreakfastBtn, today.breakfast);
-        updateMealBtn(mealLunchBtn, today.lunch);
-        updateMealBtn(mealDinnerBtn, today.dinner);
+        });
 
         if (mealMsgBox) {
-            if (mealsCount === 3) {
-                mealMsgBox.textContent = "My Anu ate properly today 🥹🍽️ Vishu is proud of you.";
-                mealMsgBox.style.background = 'rgba(255,117,143,0.25)';
-            } else if (mealsCount > 0) {
-                mealMsgBox.textContent = "YAYYY Anu ate 🥹💗 Keep going shona!";
-                mealMsgBox.style.background = 'rgba(255,117,143,0.15)';
+            const hasB = CareTrackerManager.parseMealState(today.breakfast).completed;
+            const hasL = CareTrackerManager.parseMealState(today.lunch).completed;
+            const hasD = CareTrackerManager.parseMealState(today.dinner).completed;
+
+            let msg = "";
+            let bg = "rgba(255,117,143,0.15)";
+            let border = "1px solid rgba(255,117,143,0.3)";
+
+            if (hasB && hasL && hasD) {
+                msg = "My Anu ate properly today 🥹🍽️ All 3 meals done! Vishu is so happy and proud of you 😭💗";
+                bg = "rgba(255,117,143,0.25)";
+                border = "1.5px solid rgba(255,117,143,0.5)";
+            } else if (hasB && hasL) {
+                msg = "Breakfast and lunch done! 🍳☀️ Great job Anu! Just dinner left to complete the day 💗";
+                bg = "rgba(255,117,143,0.2)";
+            } else if (hasB && hasD) {
+                msg = "Breakfast and dinner checked! 🍳🌙 Good job cutu, next time try not to miss lunch 💗";
+                bg = "rgba(255,117,143,0.2)";
+            } else if (hasL && hasD) {
+                msg = "Lunch and dinner done! ☀️🌙 Proud of you Anu! Remember breakfast tomorrow morning too shona 💗";
+                bg = "rgba(255,117,143,0.2)";
+            } else if (hasB) {
+                msg = "Good morning start, Anu! 🍳 Breakfast is done, now don't forget lunch later shona 💗";
+                bg = "rgba(255,117,143,0.15)";
+            } else if (hasL) {
+                msg = "Glad you had lunch, Anu! ☀️ Please make sure to eat dinner tonight too cutu 🥺💗";
+                bg = "rgba(255,117,143,0.15)";
+            } else if (hasD) {
+                msg = "You had dinner, Anu! 🌙 But cutu, try not to skip breakfast and lunch tomorrow 🥺💗";
+                bg = "rgba(255,117,143,0.15)";
             } else {
-                mealMsgBox.textContent = "Don't forget to fuel your day, shona 💗";
-                mealMsgBox.style.background = 'rgba(255,117,143,0.15)';
+                msg = "Anu cutu, please don't skip your meals today 🥺 Vishu is waiting for you to eat 💗";
+                bg = "rgba(168,85,247,0.15)";
+                border = "1px solid rgba(168,85,247,0.3)";
             }
+
+            mealMsgBox.textContent = msg;
+            mealMsgBox.style.background = bg;
+            mealMsgBox.style.border = border;
         }
 
         // Extra food button state
@@ -2773,26 +2940,129 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (lettersWindowView) lettersWindowView.style.display = 'none';
                 if (streakWindowView) streakWindowView.style.display = 'none';
                 if (careWindowView) careWindowView.style.display = 'flex';
+                // Reset promise state so it appears every single time Take Care is opened
+                window._carePromiseAcceptedForSession = false;
                 await renderCareView();
             });
         }
     }
 
-    // Quick Add Water Buttons
-    document.querySelectorAll('.care-water-add-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const ml = parseInt(btn.getAttribute('data-ml'), 10);
-            if (ml) {
-                const res = await CareTrackerManager.addWater(ml);
-                showFloatingPoints(res.pointsEarned, e.target);
-                if (res.currentWater >= 4.0) {
-                    triggerVishuPfpReaction("4L! Hydration goal reached 💧😭💗", "😭❤️", "Hydrated! 💧");
-                } else {
-                    triggerVishuPfpReaction("Good girl, my Anu 💧💗", "💧", "Hydrated 💧");
-                }
+    // Promise Accept Button
+    const acceptPromiseBtn = document.getElementById('vishu-promise-accept-btn');
+    if (acceptPromiseBtn) {
+        acceptPromiseBtn.addEventListener('click', async (e) => {
+            acceptPromiseBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => { if (acceptPromiseBtn) acceptPromiseBtn.style.transform = 'scale(1)'; }, 150);
+
+            window._carePromiseAcceptedForSession = true;
+            CareTrackerManager.markPromiseAcceptedForToday();
+
+            showFloatingPoints("I trust you, meri Anu 💗", acceptPromiseBtn);
+            triggerVishuPfpReaction("I trust you, meri Anu 💗", "🥰", "Trust Accepted 💗");
+
+            const promiseOverlay = document.getElementById('vishu-promise-overlay');
+            const mainContent = document.getElementById('care-tracker-main-content');
+
+            if (promiseOverlay) {
+                promiseOverlay.style.opacity = '0';
+                promiseOverlay.style.transition = 'opacity 0.35s ease';
+                setTimeout(async () => {
+                    promiseOverlay.style.display = 'none';
+                    promiseOverlay.style.opacity = '1';
+                    if (mainContent) mainContent.style.display = 'flex';
+                    await renderCareView();
+                }, 300);
+            } else {
+                if (mainContent) mainContent.style.display = 'flex';
                 await renderCareView();
             }
         });
+    }
+
+    // Quick Add Water Buttons (With Debouncing / Anti-Spam)
+    let isWaterLogging = false;
+    document.querySelectorAll('.care-water-add-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            if (isWaterLogging) return;
+            const ml = parseInt(btn.getAttribute('data-ml'), 10);
+            if (ml) {
+                isWaterLogging = true;
+                btn.style.opacity = '0.6';
+                btn.style.pointerEvents = 'none';
+
+                const res = await CareTrackerManager.addWater(ml);
+                showFloatingPoints(res.pointsEarned, e.target);
+                
+                if (res.currentWater >= 4.0) {
+                    triggerVishuPfpReaction("4L! Hydration goal reached 💧😭💗", "😭❤️", "Hydrated! 💧");
+                } else {
+                    triggerVishuPfpReaction(`Good girl, my Anu! +${ml}ml logged at ${res.timeStr} 💧💗`, "💧", "Hydrated 💧");
+                }
+                
+                await renderCareView();
+
+                setTimeout(() => {
+                    isWaterLogging = false;
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                }, 1000);
+            }
+        });
+    });
+
+    // Event Delegation for Dynamic Care Buttons (Meal Check-ins, Meal Undos, Water Undo)
+    document.addEventListener('click', async (e) => {
+        // 1. Meal Check-in Button ("Yes, I ate 💗")
+        const checkinBtn = e.target.closest('.care-meal-checkin-btn');
+        if (checkinBtn) {
+            const mealName = checkinBtn.getAttribute('data-meal');
+            if (mealName) {
+                const res = await CareTrackerManager.checkInMeal(mealName);
+                if (res.pointsEarned > 0) {
+                    showFloatingPoints(res.pointsEarned, checkinBtn);
+                }
+                if (res.isCompleted) {
+                    const data = CareTrackerManager.getLocalData();
+                    const todayStr = CareTrackerManager.getTodayDateStr();
+                    const today = data.records[todayStr];
+                    const b = CareTrackerManager.parseMealState(today.breakfast).completed;
+                    const l = CareTrackerManager.parseMealState(today.lunch).completed;
+                    const d = CareTrackerManager.parseMealState(today.dinner).completed;
+                    const mealsCount = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
+
+                    if (mealsCount === 3) {
+                        triggerVishuPfpReaction("3/3! SHE ATE 😭💗 Vishu is happy!", "😭❤️", "All Meals Done!");
+                    } else if (mealName === 'breakfast') {
+                        triggerVishuPfpReaction("YAYYY, Anu ate breakfast 🥹🍳💗", "🍳", "Breakfast Done!");
+                    } else if (mealName === 'lunch') {
+                        triggerVishuPfpReaction("Good job, shona 💗 Lunch is done!", "☀️", "Lunch Done!");
+                    } else if (mealName === 'dinner') {
+                        triggerVishuPfpReaction("My Anu ate dinner 🥹🌙❤️", "🌙", "Dinner Done!");
+                    }
+                }
+                await renderCareView();
+            }
+            return;
+        }
+
+        // 2. Meal Undo Button
+        const undoMealBtn = e.target.closest('.care-meal-undo-btn');
+        if (undoMealBtn) {
+            const mealName = undoMealBtn.getAttribute('data-meal');
+            if (mealName) {
+                await CareTrackerManager.undoMeal(mealName);
+                await renderCareView();
+            }
+            return;
+        }
+
+        // 3. Water Undo Last Entry Button
+        const undoWaterBtn = e.target.closest('.care-water-undo-last-btn');
+        if (undoWaterBtn) {
+            await CareTrackerManager.undoLastWaterEntry();
+            await renderCareView();
+            return;
+        }
     });
 
     // Quick Remove Water Buttons
@@ -2843,42 +3113,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.currentWater >= 4.0) {
                     triggerVishuPfpReaction("4L! Hydration goal reached 💧😭💗", "😭❤️", "Hydrated! 💧");
                 } else {
-                    triggerVishuPfpReaction("Good girl, my Anu 💧💗", "💧", "Hydrated 💧");
+                    triggerVishuPfpReaction(`Good girl, my Anu! +${val}ml logged 💧💗`, "💧", "Hydrated 💧");
                 }
                 await renderCareView();
             }
         });
     }
-
-    // Meal Toggle Buttons
-    document.querySelectorAll('.care-meal-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const mealName = btn.getAttribute('data-meal');
-            if (mealName) {
-                const res = await CareTrackerManager.toggleMeal(mealName);
-                if (res.pointsEarned > 0) {
-                    showFloatingPoints(res.pointsEarned, btn);
-                }
-                if (res.isCompleted) {
-                    const data = CareTrackerManager.getLocalData();
-                    const todayStr = CareTrackerManager.getTodayDateStr();
-                    const today = data.records[todayStr];
-                    const mealsCount = (today.breakfast ? 1 : 0) + (today.lunch ? 1 : 0) + (today.dinner ? 1 : 0);
-
-                    if (mealsCount === 3) {
-                        triggerVishuPfpReaction("3/3! SHE ATE 😭💗 Vishu is happy!", "😭❤️", "All Meals Done!");
-                    } else if (mealName === 'breakfast') {
-                        triggerVishuPfpReaction("YAYYY, Anu ate breakfast 🥹🍳💗", "🍳", "Breakfast Done!");
-                    } else if (mealName === 'lunch') {
-                        triggerVishuPfpReaction("Good job, shona 💗 Lunch is done!", "☀️", "Lunch Done!");
-                    } else if (mealName === 'dinner') {
-                        triggerVishuPfpReaction("My Anu ate dinner 🥹🌙❤️", "🌙", "Dinner Done!");
-                    }
-                }
-                await renderCareView();
-            }
-        });
-    });
 
     // Extra Food Button
     const extraFoodBtn = document.getElementById('care-extra-food-btn');

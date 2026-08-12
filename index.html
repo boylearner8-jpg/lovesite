@@ -765,13 +765,40 @@
             </div>
 
             <!-- VIEW 3: TAKE CARE 💗 -->
-            <div id="care-window-view" style="display: none; flex: 1; flex-direction: column; overflow-y: auto; padding-right: 4px; gap: 1rem;">
+            <div id="care-window-view" style="display: none; flex: 1; flex-direction: column; overflow-y: auto; padding-right: 4px; gap: 1rem; position: relative;">
                 
-                <!-- Time-Based Greeting Banner -->
-                <div class="glass-card care-banner" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(255,117,143,0.2) 100%); border: 1.5px solid rgba(255,117,143,0.4); border-radius: 16px;">
-                    <div id="care-time-greeting" style="font-family: var(--font-serif); font-size: 1.35rem; color: #e8c8ff; margin-bottom: 0.2rem; font-weight: 700;">Good morning, Anu 🌸</div>
-                    <div id="care-time-subtext" style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Let's start the day with some water and breakfast 💗</div>
+                <!-- DAILY FIRST-OPEN VISHU PROMISE OVERLAY CARD 🥺❤️ -->
+                <div id="vishu-promise-overlay" class="glass-card" style="display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2.2rem 1.4rem; background: linear-gradient(135deg, rgba(25,5,35,0.95) 0%, rgba(45,10,60,0.95) 100%); border: 2px solid rgba(255,117,143,0.6); border-radius: 20px; box-shadow: 0 0 35px rgba(255,117,143,0.4); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); margin: 0.5rem 0;">
+                    <!-- Vishu PFP with glowing ring -->
+                    <div style="position: relative; margin-bottom: 1.2rem;">
+                        <img src="assets/images/vishu_pfp.jpg" alt="Vishu Photo" style="width: 82px; height: 82px; border-radius: 50%; object-fit: cover; object-position: center 20%; border: 3px solid #ff758f; box-shadow: 0 0 25px rgba(255,117,143,0.9), 0 0 45px rgba(168,85,247,0.5);">
+                        <div style="position: absolute; bottom: -4px; right: -4px; width: 28px; height: 28px; font-size: 1rem; background: rgba(15,5,24,0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid #ff758f; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">🥺</div>
+                    </div>
+
+                    <!-- Romantic Promise Heading -->
+                    <h3 style="font-family: var(--font-serif); font-size: 1.22rem; color: #ff758f; margin-bottom: 0.6rem; line-height: 1.45; font-weight: 700;">
+                        “Anu meri kasam kha, tu isme fake nahi dalegi kuch — meals, paani wagaira 🥺❤️”
+                    </h3>
+                    
+                    <!-- Subtitle -->
+                    <p style="font-size: 0.88rem; color: #e8c8ff; margin-bottom: 1.6rem; line-height: 1.5; font-style: italic;">
+                        “Sach-sach check in karna, okay? I trust my Anu 💗”
+                    </p>
+
+                    <!-- ONLY ONE BUTTON -->
+                    <button type="button" id="vishu-promise-accept-btn" style="padding: 0.8rem 1.4rem; font-size: 0.88rem; font-weight: 700; border-radius: 25px; background: linear-gradient(135deg, #ff758f 0%, #a855f7 100%); border: none; color: #ffffff; cursor: pointer; box-shadow: 0 0 20px rgba(255,117,143,0.6); transition: transform 0.2s ease, box-shadow 0.2s ease; line-height: 1.35;">
+                        Haan, main mere Vishu ki kasam khati hu, main fake nahi karungi 🥺❤️
+                    </button>
                 </div>
+
+                <!-- MAIN CARE TRACKER CONTENT -->
+                <div id="care-tracker-main-content" style="display: flex; flex-direction: column; gap: 1rem;">
+                    
+                    <!-- Time-Based Greeting Banner -->
+                    <div class="glass-card care-banner" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(255,117,143,0.2) 100%); border: 1.5px solid rgba(255,117,143,0.4); border-radius: 16px;">
+                        <div id="care-time-greeting" style="font-family: var(--font-serif); font-size: 1.35rem; color: #e8c8ff; margin-bottom: 0.2rem; font-weight: 700;">Good morning, Anu 🌸</div>
+                        <div id="care-time-subtext" style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Let's start the day with some water and breakfast 💗</div>
+                    </div>
 
                 <!-- VISHU'S MOOD CARD (WITH AUTHENTIC PFP & MOOD BADGE) -->
                 <div class="glass-card" id="vishu-mood-card" style="padding: 1rem 1.2rem; border-radius: 16px; background: linear-gradient(135deg, rgba(20,5,30,0.7) 0%, rgba(40,10,50,0.7) 100%); border: 1.5px solid rgba(255,117,143,0.4); display: flex; align-items: center; gap: 1rem; position: relative; transition: all 0.4s ease;">
@@ -798,7 +825,12 @@
                 <div style="text-align: center; margin-bottom: 0.2rem;">
                     <h3 class="modal-title" style="color: #ff758f; margin-bottom: 0.2rem; font-family: var(--font-serif); font-size: 1.4rem;">A Little Reminder From Vishu 💗</h3>
                     <p style="font-size: 0.88rem; color: #e8c8ff; font-weight: 600; margin-bottom: 0.2rem;">Because my Anu needs to take care of herself too 🥺</p>
-                    <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">No pressure. No perfection. Just little reminders from someone who loves you.</p>
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">No pressure. No perfection. Just little reminders from someone who loves you.</p>
+
+                    <!-- Trust Note Badge -->
+                    <div style="display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.35rem 0.85rem; border-radius: 20px; background: rgba(255,117,143,0.15); border: 1px solid rgba(255,117,143,0.35); font-size: 0.78rem; color: #ffe0eb;">
+                        <span>Just between us 💗 — These little check-ins are based on trust. I trust my Anu. 🥺❤️</span>
+                    </div>
                 </div>
 
                 <!-- Today's Care Summary Card -->
@@ -887,20 +919,37 @@
                         <div style="font-size: 0.8rem; color: var(--text-muted);" id="care-meals-counter-label">0/3 Meals</div>
                     </div>
 
-                    <!-- 3 Meals Toggle Grid -->
+                    <!-- 3 Meals Check-in Grid -->
                     <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.8rem;">
-                        <button type="button" class="care-meal-btn" id="care-meal-breakfast" data-meal="breakfast" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
-                            <span style="font-size: 0.92rem; font-weight: 600;">🌅 Breakfast</span>
-                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
-                        </button>
-                        <button type="button" class="care-meal-btn" id="care-meal-lunch" data-meal="lunch" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
-                            <span style="font-size: 0.92rem; font-weight: 600;">☀️ Lunch</span>
-                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
-                        </button>
-                        <button type="button" class="care-meal-btn" id="care-meal-dinner" data-meal="dinner" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; transition: all 0.3s ease; text-align: left;">
-                            <span style="font-size: 0.92rem; font-weight: 600;">🌙 Dinner</span>
-                            <span class="care-meal-status" style="font-size: 1.1rem; color: var(--text-muted);">○</span>
-                        </button>
+                        <div class="care-meal-item-card" id="care-meal-card-breakfast" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0.9rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; transition: all 0.3s ease;">
+                            <div>
+                                <div style="font-size: 0.92rem; font-weight: 600;">🌅 Breakfast</div>
+                                <div class="care-meal-subtext" style="font-size: 0.78rem; color: var(--text-muted);" id="care-meal-subtext-breakfast">Did you eat breakfast, Anu?</div>
+                            </div>
+                            <div class="care-meal-action-area" id="care-meal-action-breakfast">
+                                <button type="button" class="btn care-meal-checkin-btn" data-meal="breakfast" style="padding: 0.35rem 0.8rem; font-size: 0.8rem; border-radius: 16px; background: rgba(255,117,143,0.25); border: 1px solid rgba(255,117,143,0.5); color: #fff;">Yes, I ate 💗</button>
+                            </div>
+                        </div>
+
+                        <div class="care-meal-item-card" id="care-meal-card-lunch" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0.9rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; transition: all 0.3s ease;">
+                            <div>
+                                <div style="font-size: 0.92rem; font-weight: 600;">☀️ Lunch</div>
+                                <div class="care-meal-subtext" style="font-size: 0.78rem; color: var(--text-muted);" id="care-meal-subtext-lunch">Did you eat lunch, shona?</div>
+                            </div>
+                            <div class="care-meal-action-area" id="care-meal-action-lunch">
+                                <button type="button" class="btn care-meal-checkin-btn" data-meal="lunch" style="padding: 0.35rem 0.8rem; font-size: 0.8rem; border-radius: 16px; background: rgba(255,117,143,0.25); border: 1px solid rgba(255,117,143,0.5); color: #fff;">Yes, I ate 💗</button>
+                            </div>
+                        </div>
+
+                        <div class="care-meal-item-card" id="care-meal-card-dinner" style="display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0.9rem; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; transition: all 0.3s ease;">
+                            <div>
+                                <div style="font-size: 0.92rem; font-weight: 600;">🌙 Dinner</div>
+                                <div class="care-meal-subtext" style="font-size: 0.78rem; color: var(--text-muted);" id="care-meal-subtext-dinner">Did you eat dinner, cutu?</div>
+                            </div>
+                            <div class="care-meal-action-area" id="care-meal-action-dinner">
+                                <button type="button" class="btn care-meal-checkin-btn" data-meal="dinner" style="padding: 0.35rem 0.8rem; font-size: 0.8rem; border-radius: 16px; background: rgba(255,117,143,0.25); border: 1px solid rgba(255,117,143,0.5); color: #fff;">Yes, I ate 💗</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Dynamic Meal Encouraging Message Box -->
@@ -908,12 +957,6 @@
                         Don't forget to fuel your day, shona 💗
                     </div>
 
-                    <!-- Optional Extra Food Button -->
-                    <div style="text-align: center;">
-                        <button type="button" id="care-extra-food-btn" style="padding: 0.5rem 1.2rem; font-size: 0.84rem; border-radius: 20px; background: rgba(168,85,247,0.2); border: 1px solid rgba(168,85,247,0.4); color: #e8c8ff; cursor: pointer; transition: all 0.3s ease;">
-                            🍓 I ate something extra +5 💗
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Love Points & Little Rewards 💕 Card -->
@@ -986,6 +1029,8 @@
                         "Please don't forget to eat, meri Anu. I need my cutu healthy and happy 🥺💗"
                     </p>
                 </div>
+
+                </div><!-- /#care-tracker-main-content -->
 
             </div>
         </div>
