@@ -1388,6 +1388,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return window.supabaseClient || null;
         }
 
+        // Missing streak entries that should always be present
+        static getMissingEntries() {
+            return [
+                {
+                    id: 'streak_restored_2026-08-18_anu',
+                    sender: 'Anu',
+                    message: 'I love you more ❤️',
+                    date_str: '2026-08-18',
+                    time_str: '1:17 AM',
+                    timestamp: new Date('2026-08-18T01:17:00+05:30').getTime()
+                }
+            ];
+        }
+
+        static ensureMissingEntries(messages) {
+            const missingEntries = this.getMissingEntries();
+            missingEntries.forEach(entry => {
+                const exists = messages.some(m => m.date_str === entry.date_str && m.sender === entry.sender);
+                if (!exists) {
+                    messages.push(entry);
+                    // Re-sort by timestamp descending (newest first) to match expected order
+                    messages.sort((a, b) => b.timestamp - a.timestamp);
+                }
+            });
+            return messages;
+        }
+
         static async loadMessages() {
             const client = this.getClient();
             if (client) {
@@ -1406,8 +1433,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             time_str: row.time_str,
                             timestamp: Number(row.timestamp)
                         }));
-                        localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(parsed));
-                        return parsed;
+                        const restored = this.ensureMissingEntries(parsed);
+                        localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(restored));
+                        return restored;
                     }
                 } catch (e) {
                     console.error("Error loading daily streak messages from Supabase:", e);
@@ -1415,7 +1443,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Fallback to localStorage
             const stored = localStorage.getItem(this.getLocalStorageKey());
-            return stored ? JSON.parse(stored) : [];
+            const messages = stored ? JSON.parse(stored) : [];
+            return this.ensureMissingEntries(messages);
         }
 
         static async submitDailyMessage(sender, messageText) {
