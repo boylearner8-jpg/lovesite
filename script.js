@@ -2060,6 +2060,68 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // ==========================================
+        // SINGLE SOURCE OF TRUTH: Point Calculation
+        // ==========================================
+
+        static calculateDailyPoints(rec) {
+            let points = 0;
+
+            // Water: +5 per valid entry
+            const entries = Array.isArray(rec.waterEntries) ? rec.waterEntries : [];
+            points += entries.length * 5;
+
+            // Water 4L bonus: +10 if total water >= 4.0L
+            const totalWater = Number(rec.water) || 0;
+            if (totalWater >= 4.0) points += 10;
+
+            // Meals: +10 each completed
+            const b = this.parseMealState(rec.breakfast).completed;
+            const l = this.parseMealState(rec.lunch).completed;
+            const d = this.parseMealState(rec.dinner).completed;
+            if (b) points += 10;
+            if (l) points += 10;
+            if (d) points += 10;
+
+            // All 3 meals bonus: +10
+            if (b && l && d) points += 10;
+
+            // Extra food: +5 once per day
+            if (rec.extraFood) points += 5;
+
+            return points;
+        }
+
+        static recalculateAllPoints(data) {
+            let total = 0;
+            Object.values(data.records).forEach(rec => {
+                rec.points = this.calculateDailyPoints(rec);
+                // Sync bonus flags to match actual state
+                rec.waterBonusAwarded = (Number(rec.water) || 0) >= 4.0;
+                const b = this.parseMealState(rec.breakfast).completed;
+                const l = this.parseMealState(rec.lunch).completed;
+                const d = this.parseMealState(rec.dinner).completed;
+                rec.mealsBonusAwarded = b && l && d;
+                total += rec.points;
+            });
+            data.totalPoints = total;
+        }
+
+        // Normalize a single record to ensure consistent structure
+        static normalizeRecord(rec) {
+            rec.water = Math.max(0, Number(rec.water) || 0);
+            if (!Array.isArray(rec.waterEntries)) rec.waterEntries = [];
+            rec.breakfast = this.parseMealState(rec.breakfast);
+            rec.lunch = this.parseMealState(rec.lunch);
+            rec.dinner = this.parseMealState(rec.dinner);
+            rec.extraFood = Boolean(rec.extraFood);
+            return rec;
+        }
+
+        // ==========================================
+        // DATA LOADING & SAVING
+        // ==========================================
+
         static async loadData() {
             let data = this.getLocalData();
 
@@ -2081,14 +2143,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 lunch: this.parseMealState(row.lunch),
                                 dinner: this.parseMealState(row.dinner),
                                 extraFood: Boolean(row.extra_food),
-                                points: Number(row.points) || 0,
-                                waterBonusAwarded: Boolean(row.water_bonus_awarded),
-                                mealsBonusAwarded: Boolean(row.meals_bonus_awarded)
+                                points: 0,
+                                waterBonusAwarded: false,
+                                mealsBonusAwarded: false
                             };
                         });
-                        let totPts = 0;
-                        Object.values(data.records).forEach(r => totPts += (r.points || 0));
-                        data.totalPoints = totPts;
                     }
                 } catch (e) {
                     console.error("Error fetching CareTracker data from Supabase:", e);
@@ -2111,6 +2170,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
+            // Normalize all records and recalculate all points from actual state
+            Object.values(data.records).forEach(rec => this.normalizeRecord(rec));
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
             return data;
@@ -2145,11 +2207,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     waterBonusAwarded: false,
                     mealsBonusAwarded: false
                 };
-            } else {
-                data.records[today].breakfast = this.parseMealState(data.records[today].breakfast);
-                data.records[today].lunch = this.parseMealState(data.records[today].lunch);
-                data.records[today].dinner = this.parseMealState(data.records[today].dinner);
             }
+            // Normalize all records on local load too
+            Object.values(data.records).forEach(rec => this.normalizeRecord(rec));
             return data;
         }
 
@@ -2187,40 +2247,72 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // ==========================================
+        // STREAK: Consecutive Calendar Date Check
+        // ==========================================
+
         static recalculateStreak(data) {
-            const sortedDates = Object.keys(data.records).sort().reverse();
-            if (sortedDates.length === 0) {
-                data.careStreak = 0;
-                return;
-            }
-
-            let streak = 0;
             const today = this.getTodayDateStr();
+            let streak = 0;
 
-            for (let i = 0; i < sortedDates.length; i++) {
-                const dateKey = sortedDates[i];
-                const rec = data.records[dateKey];
+            // Helper: check if a date string is a valid care day
+            const isCareDay = (dateStr) => {
+                const rec = data.records[dateStr];
+                if (!rec) return false;
                 const b = this.parseMealState(rec.breakfast).completed;
                 const l = this.parseMealState(rec.lunch).completed;
                 const d = this.parseMealState(rec.dinner).completed;
                 const mealsCount = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
-                const isCareDay = rec.water >= 3.0 || mealsCount >= 2;
+                return rec.water >= 3.0 || mealsCount >= 2;
+            };
 
-                if (isCareDay) {
+            // Helper: get YYYY-MM-DD for a Date object
+            const toDateStr = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // Walk backwards from today using consecutive calendar dates
+            let checkDate = new Date();
+
+            // If today is not a care day, skip it (don't break streak, just start from yesterday)
+            if (!isCareDay(today)) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (true) {
+                const dStr = toDateStr(checkDate);
+                if (isCareDay(dStr)) {
                     streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
                 } else {
-                    if (dateKey !== today) {
-                        break;
-                    }
+                    break;
                 }
             }
+
             data.careStreak = streak;
         }
 
+        // ==========================================
+        // ACTION METHODS (all use recalculation)
+        // ==========================================
+
         static async addWater(amountMl) {
+            // Input validation
+            amountMl = Number(amountMl);
+            if (!amountMl || amountMl <= 0 || amountMl > 5000 || isNaN(amountMl)) {
+                const data = this.getLocalData();
+                const today = this.getTodayDateStr();
+                const rec = data.records[today];
+                return { data, pointsEarned: 0, currentWater: rec.water, timeStr: '' };
+            }
+
             const data = this.getLocalData();
             const today = this.getTodayDateStr();
             const rec = data.records[today];
+            const oldPoints = rec.points;
 
             const now = new Date();
             const timeStr = this.getFormattedTimeString(now);
@@ -2235,23 +2327,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: now.getTime()
             });
 
-            let pointsEarned = 5;
-
-            if (rec.water >= 4.0 && !rec.waterBonusAwarded) {
-                rec.waterBonusAwarded = true;
-                pointsEarned += 10;
-            }
-
-            rec.points += pointsEarned;
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = totPts;
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
+            const pointsEarned = rec.points - oldPoints;
             return { data, pointsEarned, currentWater: rec.water, timeStr };
         }
 
@@ -2268,20 +2350,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const litresToDeduct = (undoneEntry.amount || 0) / 1000;
             rec.water = Math.max(0, parseFloat((rec.water - litresToDeduct).toFixed(2)));
 
-            if (rec.water < 4.0 && rec.waterBonusAwarded) {
-                rec.waterBonusAwarded = false;
-                rec.points = Math.max(0, rec.points - 10);
-            }
-
-            rec.points = Math.max(0, rec.points - 5);
-
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = Math.max(0, totPts);
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
             return { data, undoneEntry };
@@ -2298,18 +2370,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             rec.water = 0.0;
             rec.waterEntries = [];
-            if (rec.waterBonusAwarded) {
-                rec.waterBonusAwarded = false;
-                rec.points = Math.max(0, rec.points - 10);
-            }
 
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = Math.max(0, totPts);
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
             return { data, currentWater: 0.0 };
@@ -2325,6 +2390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentMeal = this.parseMealState(rec[mealName]);
             if (currentMeal.completed) return { data, pointsEarned: 0, alreadyDone: true };
 
+            const oldPoints = rec.points;
             const now = new Date();
             const timeStr = this.getFormattedTimeString(now);
 
@@ -2334,27 +2400,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: now.getTime()
             };
 
-            let pointsEarned = 10;
-            const b = this.parseMealState(rec.breakfast).completed;
-            const l = this.parseMealState(rec.lunch).completed;
-            const d = this.parseMealState(rec.dinner).completed;
-            const mealsNow = (b ? 1 : 0) + (l ? 1 : 0) + (d ? 1 : 0);
-
-            if (mealsNow === 3 && !rec.mealsBonusAwarded) {
-                rec.mealsBonusAwarded = true;
-                pointsEarned += 10;
-            }
-
-            rec.points += pointsEarned;
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = totPts;
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
+            const pointsEarned = rec.points - oldPoints;
             return { data, pointsEarned, timeStr, isCompleted: true };
         }
 
@@ -2374,20 +2426,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: null
             };
 
-            let pointsDeducted = 10;
-            if (rec.mealsBonusAwarded) {
-                rec.mealsBonusAwarded = false;
-                pointsDeducted += 10;
-            }
-
-            rec.points = Math.max(0, rec.points - pointsDeducted);
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = Math.max(0, totPts);
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
             return { data, isCompleted: false };
@@ -2412,19 +2454,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (rec.extraFood) return { data, pointsEarned: 0, alreadyClaimed: true };
 
+            const oldPoints = rec.points;
             rec.extraFood = true;
-            const pointsEarned = 5;
-            rec.points += pointsEarned;
 
-            let totPts = 0;
-            Object.values(data.records).forEach(r => totPts += (r.points || 0));
-            data.totalPoints = totPts;
-
+            // Recalculate from actual state
+            this.recalculateAllPoints(data);
             this.recalculateStreak(data);
             this.saveLocalData(data);
-
             await this.syncTodayRecordToSupabase(rec);
 
+            const pointsEarned = rec.points - oldPoints;
             return { data, pointsEarned, alreadyClaimed: false };
         }
     }
@@ -2614,8 +2653,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (summaryWater) summaryWater.textContent = `${today.water.toFixed(1)} / 4.0 L`;
         if (summaryMeals) summaryMeals.textContent = `${mealsCount} / 3`;
-        if (summaryPoints) summaryPoints.textContent = `${today.points} 💗`;
-        if (lovePointsBadge) lovePointsBadge.textContent = `${data.totalPoints} 💗`;
+        if (summaryPoints) summaryPoints.innerHTML = `Today: ${today.points} 💗<br><span style="font-size:0.75rem;color:var(--text-muted);">Total: ${data.totalPoints} 💗</span>`;
+        if (lovePointsBadge) lovePointsBadge.textContent = `${today.points} 💗`;
         if (progressPercent) progressPercent.textContent = `${overallProgress}% cared for today 💗`;
         if (progressFill) progressFill.style.width = `${overallProgress}%`;
 
@@ -2809,7 +2848,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dateKeys.forEach(dk => {
             const r = data.records[dk];
             weekWaterSum += r.water || 0;
-            const m = (r.breakfast ? 1 : 0) + (r.lunch ? 1 : 0) + (r.dinner ? 1 : 0);
+            const bw = CareTrackerManager.parseMealState(r.breakfast).completed;
+            const lw = CareTrackerManager.parseMealState(r.lunch).completed;
+            const dw = CareTrackerManager.parseMealState(r.dinner).completed;
+            const m = (bw ? 1 : 0) + (lw ? 1 : 0) + (dw ? 1 : 0);
             weekMealsSum += m;
             weekPointsSum += r.points || 0;
         });
@@ -2837,7 +2879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 historyFeed.innerHTML = '';
                 allDates.slice(0, 10).forEach(dk => {
                     const r = data.records[dk];
-                    const mCount = (r.breakfast ? 1 : 0) + (r.lunch ? 1 : 0) + (r.dinner ? 1 : 0);
+                    const mCount = (CareTrackerManager.parseMealState(r.breakfast).completed ? 1 : 0) + (CareTrackerManager.parseMealState(r.lunch).completed ? 1 : 0) + (CareTrackerManager.parseMealState(r.dinner).completed ? 1 : 0);
                     const formattedDate = CareTrackerManager.getFormattedDateStr(dk);
 
                     const card = document.createElement('div');
